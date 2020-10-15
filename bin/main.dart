@@ -39,10 +39,9 @@ void _createContent(
   directory.create(recursive: true).then((Directory directory) {
     for (final argument in argResults) {
       final file = File('$dirPath/$argument.json');
-      if (!file.existsSync()) {
-        stdout.writeln('Creating file: ${file.path}');
-        file.create(recursive: true).then((file) => file.writeAsString('{}'));
-      }
+      stdout.writeln('Creating file: ${file.path}');
+      file.create(recursive: true).then((file) => file.writeAsString(
+          '{\n  "title": "value",\n  "amount_of_clicks": "value",\n  "increase": "value"\n}'));
     }
   });
 }

@@ -1,20 +1,21 @@
 library localized;
 
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+final List<String> localizationCodes = [];
+
 extension Localized on String {
   String localized(BuildContext context) =>
-      LocalizationService._of(context).translate(this);
+      LocalizationService.of(context).translate(this);
 }
 
 class LocalizationService {
   static const LocalizationsDelegate<LocalizationService> delegate =
       _LocalizationServiceDelegate();
-  static LocalizationService _of(BuildContext context) =>
+  static LocalizationService of(BuildContext context) =>
       Localizations.of<LocalizationService>(context, LocalizationService);
 
   final Locale locale;
@@ -23,7 +24,7 @@ class LocalizationService {
 
   Map<String, String> _localizedStrings;
 
-  Future<bool> _load() async {
+  Future<bool> load() async {
     final jsonString =
         await rootBundle.loadString('assets/i18n/${locale.languageCode}.json');
     final Map<String, dynamic> jsonMap = json.decode(jsonString);
@@ -42,20 +43,13 @@ class _LocalizationServiceDelegate
 
   @override
   bool isSupported(Locale locale) {
-    final dirPath = 'assets/i18n';
-    final directory = Directory('assets/i18n');
-    if (directory.existsSync()) {
-      final file = File('$dirPath/${locale.languageCode}.json');
-      return file.existsSync();
-    } else {
-      return false;
-    }
+    return ['en', 'de', 'ru'].contains(locale.languageCode);
   }
 
   @override
   Future<LocalizationService> load(Locale locale) async {
     final localizations = LocalizationService(locale);
-    await localizations._load();
+    await localizations.load();
     return localizations;
   }
 
