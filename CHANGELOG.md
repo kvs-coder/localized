@@ -1,3 +1,7 @@
-## [1.0.0] - TODO: Add release date.
+## [1.0.0] - 16.10.2020
 
 * Initial release. The String extension for localizations.
+
+## [1.0.1] - 16.10.2020
+
+* Better documentation, small fixes.

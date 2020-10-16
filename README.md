@@ -192,3 +192,5 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 ```
+
+Under <a href=https://github.com/VictorKachalov/localized/blob/master/LICENSE>MIT License</a>
