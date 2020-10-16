@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:localized/localized.dart';
 
 void main() {
@@ -8,22 +7,20 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
+  final locales = [
+    // TODO: add new lang in array
+    Locale('de', 'DE'),
+    Locale('en', 'EN'),
+    Locale('ru', 'RU'),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
-      supportedLocales: [
-        // TODO: add new lang in array
-        Locale('de', 'DE'),
-        Locale('en', 'EN'),
-        Locale('ru', 'RU'),
-      ],
+      supportedLocales: locales,
       localizationsDelegates: [
-        LocalizationService.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        DefaultCupertinoLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
+        LocalizationService.delegate(locales),
       ],
       theme: ThemeData(
         primarySwatch: Colors.blue,

@@ -5,16 +5,16 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-final List<String> localizationCodes = [];
-
 extension Localized on String {
   String localized(BuildContext context) =>
       LocalizationService.of(context).translate(this);
 }
 
 class LocalizationService {
-  static const LocalizationsDelegate<LocalizationService> delegate =
-      _LocalizationServiceDelegate();
+  static LocalizationsDelegate<LocalizationService> delegate(
+          List<Locale> locales) =>
+      _LocalizationServiceDelegate(locales);
+
   static LocalizationService of(BuildContext context) =>
       Localizations.of<LocalizationService>(context, LocalizationService);
 
@@ -39,12 +39,13 @@ class LocalizationService {
 
 class _LocalizationServiceDelegate
     extends LocalizationsDelegate<LocalizationService> {
-  const _LocalizationServiceDelegate();
+  const _LocalizationServiceDelegate(this.locales);
+
+  final List<Locale> locales;
 
   @override
-  bool isSupported(Locale locale) {
-    return ['en', 'de', 'ru'].contains(locale.languageCode);
-  }
+  bool isSupported(Locale locale) =>
+      locales.map((e) => e.languageCode).contains(locale.languageCode);
 
   @override
   Future<LocalizationService> load(Locale locale) async {
