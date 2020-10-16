@@ -8,6 +8,9 @@ import 'package:flutter/widgets.dart';
 /// A [Localized] extension for [String]
 ///
 extension Localized on String {
+  /// An extension function for extracting the value out of JSON file
+  /// Requires [context] as a parameter.
+  ///
   String localized(BuildContext context) =>
       LocalizationService.of(context).translate(this);
 }
@@ -18,6 +21,10 @@ extension Localized on String {
 /// by running the script 'flutter pub run localized:main -l [locale codes]'
 ///
 class LocalizationService {
+  /// A [LocalizationsDelegate] delegate
+  /// Creates an instance of the localization delegate
+  /// Requires [locales] as a parameter to create an instance.
+  ///
   static LocalizationsDelegate<LocalizationService> delegate(
           List<Locale> locales) =>
       _LocalizationServiceDelegate(locales);
@@ -41,6 +48,9 @@ class LocalizationService {
     return true;
   }
 
+  /// A function for extracting the value out of JSON file
+  /// Requires [key] as a parameter get the appropriate value.
+  ///
   String translate(String key) => _localizedStrings[key];
 }
 
@@ -50,6 +60,8 @@ class _LocalizationServiceDelegate
     extends LocalizationsDelegate<LocalizationService> {
   const _LocalizationServiceDelegate(this.locales);
 
+  /// A list of desired localizations.
+  ///
   final List<Locale> locales;
 
   @override

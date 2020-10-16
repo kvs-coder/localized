@@ -9,3 +9,7 @@
 ## [1.0.2] - 16.10.2020
 
 * Better description.
+
+## [1.0.3] - 16.10.2020
+
+* Code documentation.

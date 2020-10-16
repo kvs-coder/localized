@@ -8,7 +8,7 @@ String extensions for localization
 - Add this to your package's pubspec.yaml file: 
 ``` Dart
 dependencies:
-     localized: ^1.0.2
+     localized: ^1.0.3
 ```
 - Get dependencies
 
