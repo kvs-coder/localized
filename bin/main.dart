@@ -10,7 +10,7 @@ void main(List<String> args) {
   final argResults = parser.parse(args)['localization'];
   if( argResults.isEmpty ) {
     stdout.writeln(
-      'You need to provide at leat one locale. Exiting...');
+      'You need to provide at least one locale. Exiting...');
     exit(0);
   }
   final dirPath = parser.parse(args)['dirPath'];
