@@ -6,11 +6,13 @@ import 'package:args/args.dart';
 void main(List<String> args) {
   final parser = ArgParser(allowTrailingOptions: true);
   parser.addMultiOption('localization', abbr: 'l', help: 'Localization codes');
-  parser.addOption('dirPath', abbr: 'd', defaultsTo: 'assets/i18n', help:'i18n files directory, \'assets/i18n\' by default');
+  parser.addOption('dirPath',
+      abbr: 'd',
+      defaultsTo: 'assets/i18n',
+      help: 'i18n files directory, \'assets/i18n\' by default');
   final argResults = parser.parse(args)['localization'];
-  if( argResults.isEmpty ) {
-    stdout.writeln(
-      'You need to provide at least one locale. Exiting...');
+  if (argResults.isEmpty) {
+    stdout.writeln('You need to provide at least one locale. Exiting...');
     exit(0);
   }
   final dirPath = parser.parse(args)['dirPath'];
