@@ -48,7 +48,7 @@ class LocalizationService {
 
   Future<bool> load() async {
     final jsonString =
-        await rootBundle.loadString('${dirPath}/${locale.languageCode}.json');
+        await rootBundle.loadString('$dirPath/${locale.languageCode}.json');
     final Map<String, dynamic> jsonMap = json.decode(jsonString);
     _localizedStrings = jsonMap.map((key, value) {
       return MapEntry(key, value.toString());
