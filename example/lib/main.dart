@@ -8,7 +8,6 @@ void main() {
 
 class MyApp extends StatelessWidget {
   final locales = [
-    // TODO: add new lang in array
     Locale('de', 'DE'),
     Locale('en', 'EN'),
     Locale('ru', 'RU'),
@@ -20,7 +19,7 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       supportedLocales: locales,
       localizationsDelegates: [
-        LocalizationService.delegate(locales),
+        LocalizationService.delegate(locales: locales),
       ],
       theme: ThemeData(
         primarySwatch: Colors.blue,

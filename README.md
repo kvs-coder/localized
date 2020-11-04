@@ -37,6 +37,23 @@ As a result this will be added to the project tree:
         - ru.json
 ``` 
 
+In addition, you can specify the directory where the files
+will be created
+
+``` shell
+flutter pub run localized:main -l en,de,ru -d res/localizations
+``` 
+
+For now the result this will:
+
+``` shell
+- res
+    - localizations
+        - de.json
+        - en.json
+        - ru.json
+``` 
+
 A generated assets folder with i18n folder inside and generated JSON files.
 
 Next step is to add these assets in a <b>pubspec.yaml</b> file
@@ -89,7 +106,7 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       supportedLocales: locales,
       localizationsDelegates: [
-        LocalizationService.delegate(locales),
+        LocalizationService.delegate(locales: locales),
       ],
       theme: ThemeData(
         primarySwatch: Colors.blue,
