@@ -1,7 +1,8 @@
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 import 'package:args/args.dart' show ArgParser;
-//import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:translator/translator.dart';
 
 void main(List<String> args) {
   final parser = ArgParser(allowTrailingOptions: true);
@@ -32,12 +33,13 @@ void main(List<String> args) {
   final langCodes = parser.parse(args)['languageCodes'];
   final dirPath = parser.parse(args)['dirPath'];
 
+  langCodes.sort((a, b) => a == 'en' ? -1 : b == 'en' ? 1 : 0);
+
   if (createFiles) _createLocalizedFiles(langCodes, dirPath);
   if (translateFiles) _translateLocalizedFiles(langCodes, dirPath);
 }
 
-Future<void> _translateLocalizedFiles(
-    List<String> langCodes, String dirPath) async {
+_translateLocalizedFiles(List<String> langCodes, String dirPath) async {
   if (langCodes.length < 2) {
     stdout.writeln(
         'For translation you have to provide at least two langCodes. Exiting...');
@@ -56,29 +58,39 @@ Future<void> _translateLocalizedFiles(
     exit(0);
   }
 
-  Map<String, Map<String, String>> existingLangStrings = Map();
-  Map<String, Map<String, String>> newLangStrings = Map();
+  Map<String, Map<String, String>> oldLangStrMap = Map();
+  Map<String, Map<String, String>> newLangStrMap = Map();
 
   for (final lang in langCodes) {
     if (!_isSupported(lang)) {
       stdout.writeln('Language code $lang is not supported.');
       continue;
     }
-    existingLangStrings[lang] = await _loadStrings(lang, dirPath);
+    oldLangStrMap[lang] = await _loadStrings(lang, dirPath);
   }
 
+  var gtr = GoogleTranslator();
   var updated = false;
-  existingLangStrings.forEach((sourceLang, sourceLangMap) {
-    sourceLangMap.forEach((sourceKey, sourceValue) {
-      existingLangStrings.forEach((targetLang, targetLangMap) {
+
+  await Future.forEach(oldLangStrMap.entries, (oldLangStrOuterMap) async {
+    String sourceLang = oldLangStrOuterMap.key;
+    Map<String, String> sourceLangMap = oldLangStrOuterMap.value;
+    await Future.forEach(sourceLangMap.entries, (sourceLangMapEntry) async {
+      String sourceKey = sourceLangMapEntry.key;
+      String sourceString = sourceLangMapEntry.value;
+      await Future.forEach(oldLangStrMap.entries, (oldLangStrInnerMap) async {
+        String targetLang = oldLangStrInnerMap.key;
+        Map<String, String> targetLangMap = oldLangStrInnerMap.value;
         if (sourceLang != targetLang) {
-          if (!targetLangMap.containsKey(sourceKey)) {
-            if (!newLangStrings.containsKey(targetLang)) {
-              newLangStrings[targetLang] = Map();
+          if (sourceLangMap[sourceKey].isNotEmpty &&
+              !targetLangMap.containsKey(sourceKey)) {
+            if (!newLangStrMap.containsKey(targetLang)) {
+              newLangStrMap[targetLang] = Map();
             }
             updated = true;
-            newLangStrings[targetLang][sourceKey] =
-                _translate(sourceValue, sourceLang, targetLang);
+            newLangStrMap[targetLang][sourceKey] = (await gtr
+                    .translate(sourceString, from: sourceLang, to: targetLang))
+                .text;
           }
         }
       });
@@ -90,45 +102,40 @@ Future<void> _translateLocalizedFiles(
     exit(0);
   }
 
-  existingLangStrings.forEach((lang, langMap) {
-    if (newLangStrings.containsKey(lang)) {
-      existingLangStrings[lang].addAll(newLangStrings[lang]);
+  oldLangStrMap.forEach((lang, langMap) {
+    if (newLangStrMap.containsKey(lang)) {
+      oldLangStrMap[lang].addAll(newLangStrMap[lang]);
     }
   });
-
-  _updateContent(existingLangStrings, dirPath);
-}
-
-String _translate(String sourceValue, String sourceLang, String targetLang) {
-  return sourceValue;
+  _updateContent(oldLangStrMap, dirPath);
 }
 
 Future<Map<String, String>> _loadStrings(String lang, String dirPath) async {
-  Map<String, dynamic> jsonMap = await File('$dirPath/$lang.json')
-      .readAsString()
-      .then((jsonString) => json.decode(jsonString));
   Map<String, String> localizedStrings = Map();
+  File file = File('$dirPath/$lang.json');
+  if (!await file.exists()) return localizedStrings;
+  String jsonString = await file.readAsString();
+  if (jsonString.isEmpty) return localizedStrings;
+  Map<String, dynamic> jsonMap = json.decode(jsonString);
   localizedStrings = jsonMap.map((key, value) {
     return MapEntry(key, value.toString());
   });
   return localizedStrings;
 }
 
-void _updateContent(Map<String, Map<String, String>> langMap, dirPath) {
-  langMap.forEach((lang, strMap) {
-    String jsonStr = json.encode(strMap);
-    File('$dirPath/$lang.json').create(recursive: true).then((file) {
+_updateContent(Map<String, Map<String, String>> langStrMap, dirPath) {
+  Future.forEach(langStrMap.entries, (langStrMapEntry) async {
+    String jsonStr = json.encode(langStrMapEntry.value);
+    await File('$dirPath/${langStrMapEntry.key}.json')
+        .create(recursive: true)
+        .then((file) {
       stdout.writeln('Rewriting file: ${file.path}');
       file.writeAsString(jsonStr);
     });
   });
 }
 
-bool _isSupported(String locale) =>
-    true /*(Platform.isIOS
-    ? kCupertinoSupportedLanguages.contains(locale)
-    : kMaterialSupportedLanguages.contains(locale))*/
-    ;
+bool _isSupported(String locale) => kSupportedLanguages.contains(locale);
 
 void _createLocalizedFiles(List<String> langCodes, String dirPath) {
   if (langCodes.isEmpty) {
@@ -177,3 +184,84 @@ void _createContent(
     }
   });
 }
+
+final Set<String> kSupportedLanguages = HashSet<String>.from(const <String>[
+  'af', // Afrikaans
+  'am', // Amharic
+  'ar', // Arabic
+  'as', // Assamese
+  'az', // Azerbaijani
+  'be', // Belarusian
+  'bg', // Bulgarian
+  'bn', // Bengali Bangla
+  'bs', // Bosnian
+  'ca', // Catalan Valencian
+  'cs', // Czech
+  'da', // Danish
+  'de', // German
+  'el', // Modern Greek
+  'en', // English
+  'es', // Spanish Castilian
+  'et', // Estonian
+  'eu', // Basque
+  'fa', // Persian
+  'fi', // Finnish
+  'fil', // Filipino Pilipino
+  'fr', // French
+  'gl', // Galician
+  'gsw', // Swiss German Alemannic Alsatian
+  'gu', // Gujarati
+  'he', // Hebrew
+  'hi', // Hindi
+  'hr', // Croatian
+  'hu', // Hungarian
+  'hy', // Armenian
+  'id', // Indonesian
+  'is', // Icelandic
+  'it', // Italian
+  'ja', // Japanese
+  'ka', // Georgian
+  'kk', // Kazakh
+  'km', // Khmer Central Khmer
+  'kn', // Kannada
+  'ko', // Korean
+  'ky', // Kirghiz Kyrgyz
+  'lo', // Lao
+  'lt', // Lithuanian
+  'lv', // Latvian
+  'mk', // Macedonian
+  'ml', // Malayalam
+  'mn', // Mongolian
+  'mr', // Marathi
+  'ms', // Malay
+  'my', // Burmese
+  'nb', // Norwegian Bokmål
+  'ne', // Nepali
+  'nl', // Dutch Flemish
+  'no', // Norwegian
+  'or', // Oriya
+  'pa', // Panjabi Punjabi
+  'pl', // Polish
+  'ps', // Pushto Pashto
+  'pt', // Portuguese
+  'ro', // Romanian Moldavian Moldovan
+  'ru', // Russian
+  'si', // Sinhala Sinhalese
+  'sk', // Slovak
+  'sl', // Slovenian
+  'sq', // Albanian
+  'sr', // Serbian
+  'sv', // Swedish
+  'sw', // Swahili
+  'ta', // Tamil
+  'te', // Telugu
+  'th', // Thai
+  'tl', // Tagalog
+  'tr', // Turkish
+  'uk', // Ukrainian
+  'ur', // Urdu
+  'uz', // Uzbek
+  'vi', // Vietnamese
+  'zh', // Chinese
+  'zu', // Zulu
+]);
