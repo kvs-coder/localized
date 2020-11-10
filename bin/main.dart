@@ -1,6 +1,7 @@
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:args/args.dart' show ArgParser;
 import 'package:translator/translator.dart';
 
@@ -19,35 +20,37 @@ void main(List<String> args) {
   parser.addMultiOption('languageCodes', abbr: 'l', help: 'Language codes');
   parser.addOption('dirPath',
       abbr: 'd', defaultsTo: 'assets/i18n', help: 'i18n files directory');
-
   final createFiles = parser.parse(args)['create'];
   final translateFiles = parser.parse(args)['translate'];
-
   if ((createFiles && translateFiles) || (!createFiles && !translateFiles)) {
     stdout.writeln('${parser.usage}');
     stdout.writeln(
         'You have to choose between -create and -translate. Exiting...');
     exit(0);
   }
-
   final langCodes = parser.parse(args)['languageCodes'];
   final dirPath = parser.parse(args)['dirPath'];
-
-  langCodes.sort((a, b) => a == 'en' ? -1 : b == 'en' ? 1 : 0);
-
-  if (createFiles) _createLocalizedFiles(langCodes, dirPath);
-  if (translateFiles) _translateLocalizedFiles(langCodes, dirPath);
+  langCodes.sort((a, b) => a == 'en'
+      ? -1
+      : b == 'en'
+          ? 1
+          : 0);
+  if (createFiles) {
+    _createLocalizedFiles(langCodes, dirPath);
+  }
+  print(langCodes);
+  if (translateFiles) {
+    _translateLocalizedFiles(langCodes, dirPath);
+  }
 }
 
-_translateLocalizedFiles(List<String> langCodes, String dirPath) async {
+void _translateLocalizedFiles(List<String> langCodes, String dirPath) async {
   if (langCodes.length < 2) {
     stdout.writeln(
         'For translation you have to provide at least two langCodes. Exiting...');
     exit(0);
   }
-
   final directory = Directory(dirPath);
-
   if (!directory.existsSync()) {
     stdout.writeln('No directory found. Exiting...');
     exit(0);
@@ -57,10 +60,8 @@ _translateLocalizedFiles(List<String> langCodes, String dirPath) async {
     stdout.writeln('No localization files found. Exiting...');
     exit(0);
   }
-
-  Map<String, Map<String, String>> oldLangStrMap = Map();
-  Map<String, Map<String, String>> newLangStrMap = Map();
-
+  final oldLangStrMap = Map<String, Map<String, String>>();
+  final newLangStrMap = Map<String, Map<String, String>>();
   for (final lang in langCodes) {
     if (!_isSupported(lang)) {
       stdout.writeln('Language code $lang is not supported.');
@@ -68,19 +69,17 @@ _translateLocalizedFiles(List<String> langCodes, String dirPath) async {
     }
     oldLangStrMap[lang] = await _loadStrings(lang, dirPath);
   }
-
-  var gtr = GoogleTranslator();
-  var updated = false;
-
+  final gtr = GoogleTranslator();
+  bool updated = false;
   await Future.forEach(oldLangStrMap.entries, (oldLangStrOuterMap) async {
-    String sourceLang = oldLangStrOuterMap.key;
-    Map<String, String> sourceLangMap = oldLangStrOuterMap.value;
+    final sourceLang = oldLangStrOuterMap.key;
+    final sourceLangMap = oldLangStrOuterMap.value;
     await Future.forEach(sourceLangMap.entries, (sourceLangMapEntry) async {
-      String sourceKey = sourceLangMapEntry.key;
-      String sourceString = sourceLangMapEntry.value;
+      final sourceKey = sourceLangMapEntry.key;
+      final sourceString = sourceLangMapEntry.value;
       await Future.forEach(oldLangStrMap.entries, (oldLangStrInnerMap) async {
-        String targetLang = oldLangStrInnerMap.key;
-        Map<String, String> targetLangMap = oldLangStrInnerMap.value;
+        final targetLang = oldLangStrInnerMap.key;
+        final targetLangMap = oldLangStrInnerMap.value;
         if (sourceLang != targetLang) {
           if (sourceLangMap[sourceKey].isNotEmpty &&
               !targetLangMap.containsKey(sourceKey)) {
@@ -96,12 +95,10 @@ _translateLocalizedFiles(List<String> langCodes, String dirPath) async {
       });
     });
   });
-
   if (!updated) {
     stdout.writeln('No strings were translated. Exiting...');
     exit(0);
   }
-
   oldLangStrMap.forEach((lang, langMap) {
     if (newLangStrMap.containsKey(lang)) {
       oldLangStrMap[lang].addAll(newLangStrMap[lang]);
@@ -111,21 +108,25 @@ _translateLocalizedFiles(List<String> langCodes, String dirPath) async {
 }
 
 Future<Map<String, String>> _loadStrings(String lang, String dirPath) async {
-  Map<String, String> localizedStrings = Map();
-  File file = File('$dirPath/$lang.json');
-  if (!await file.exists()) return localizedStrings;
-  String jsonString = await file.readAsString();
-  if (jsonString.isEmpty) return localizedStrings;
-  Map<String, dynamic> jsonMap = json.decode(jsonString);
+  var localizedStrings = Map<String, String>();
+  final file = File('$dirPath/$lang.json');
+  if (!await file.exists()) {
+    return localizedStrings;
+  }
+  final jsonString = await file.readAsString();
+  if (jsonString.isEmpty) {
+    return localizedStrings;
+  }
+  final Map<String, dynamic> jsonMap = json.decode(jsonString);
   localizedStrings = jsonMap.map((key, value) {
     return MapEntry(key, value.toString());
   });
   return localizedStrings;
 }
 
-_updateContent(Map<String, Map<String, String>> langStrMap, dirPath) {
+void _updateContent(Map<String, Map<String, String>> langStrMap, dirPath) {
   Future.forEach(langStrMap.entries, (langStrMapEntry) async {
-    String jsonStr = json.encode(langStrMapEntry.value);
+    final jsonStr = json.encode(langStrMapEntry.value);
     await File('$dirPath/${langStrMapEntry.key}.json')
         .create(recursive: true)
         .then((file) {
@@ -154,7 +155,7 @@ void _createLocalizedFiles(List<String> langCodes, String dirPath) {
 void _rewrite(Directory directory, List<String> langCodes, String dirPath) {
   stdout.writeln(
       'The assets with i18n exist. Do you want to override it? [Y/N]:');
-  var line =
+  final line =
       stdin.readLineSync(encoding: Encoding.getByName('utf-8')).toLowerCase();
   switch (line) {
     case 'y':
@@ -171,7 +172,7 @@ void _rewrite(Directory directory, List<String> langCodes, String dirPath) {
 
 void _createContent(
     Directory directory, List<String> langCodes, String dirPath) {
-  directory.create(recursive: true).then((Directory directory) {
+  directory.create(recursive: true).then((directory) {
     for (final lang in langCodes) {
       if (!_isSupported(lang)) {
         stdout.writeln('Language code $lang is not supported.');
