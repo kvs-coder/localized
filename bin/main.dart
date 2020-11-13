@@ -7,6 +7,7 @@ import 'package:tuple/tuple.dart';
 
 import 'package:translator/translator.dart';
 
+// supported translation providers
 Map<String, String> _providers = {
   "GoogleTest": "Google API through a back door",
   "Google": "Google using API key",
@@ -34,6 +35,8 @@ void main(List<String> args) {
       allowedHelp: _providers,
       help: 'Provider of translation API');
   parser.addOption('key', abbr: 'k', help: 'Project API key');
+  parser.addOption('number',
+      abbr: 'n', help: 'The number of strings to translate in one request');
 
   final createFiles = parser.parse(args)['create'];
   final translateFiles = parser.parse(args)['translate'];
@@ -49,29 +52,31 @@ void main(List<String> args) {
   final dirPath = parser.parse(args)['dirPath'];
   final provider = parser.parse(args)['provider'];
   final projectKey = parser.parse(args)['key'];
+  final numStringsAtOnce = int.parse(parser.parse(args)['number']);
 
+  // translation from English is better
   langCodes.sort((a, b) => a == 'en' ? -1 : b == 'en' ? 1 : 0);
 
+  // creating examples or translating strings?
   if (createFiles) _createLocalizedFiles(langCodes, dirPath);
   if (translateFiles)
-    _translateLocalizedFiles(langCodes, dirPath, provider, projectKey);
+    _translateLocalizedFiles(
+        langCodes, dirPath, provider, projectKey, numStringsAtOnce);
 }
 
+// main function to translate
 _translateLocalizedFiles(List<String> langCodes, String dirPath,
-    String provider, String projectKey) async {
+    String provider, String projectKey, int numStringsAtOnce) async {
   if (!_providers.containsKey(provider)) {
     stdout.writeln('No tranclation provider is set. Exiting...');
     exit(0);
   }
-
   if (langCodes.length < 2) {
     stdout.writeln(
         'For translation you have to provide at least two langCodes. Exiting...');
     exit(0);
   }
-
   final directory = Directory(dirPath);
-
   if (!directory.existsSync()) {
     stdout.writeln('No directory found. Exiting...');
     exit(0);
@@ -82,8 +87,8 @@ _translateLocalizedFiles(List<String> langCodes, String dirPath,
     exit(0);
   }
 
+  // loading keys and strings to langStringMap for each language
   Map<String, Map<String, String>> langStringMap = Map();
-
   for (final lang in langCodes) {
     if (!_isSupported(lang)) {
       stdout.writeln('Language code $lang is not supported.');
@@ -92,9 +97,11 @@ _translateLocalizedFiles(List<String> langCodes, String dirPath,
     langStringMap[lang] = await _loadStrings(lang, dirPath);
   }
 
-  // map of <targetLang, sourceLang> to List<key>>
+  // looking for and collecting strings that exist for one language, but don't for another
+  // we need such a strange structure to translate a bunch of strings at once,
+  // because this is much quicker
+  // Map of <targetLang, sourceLang> to List<key>>
   Map<Tuple2<String, String>, List<String>> toTranslateMap = Map();
-
   langStringMap.forEach((sourceLang, sourceStringMap) {
     sourceStringMap.forEach((sourceKey, sourceString) {
       langStringMap.forEach((targetLang, targetStringMap) {
@@ -109,26 +116,30 @@ _translateLocalizedFiles(List<String> langCodes, String dirPath,
       });
     });
   });
-
   if (toTranslateMap.isEmpty) {
     stdout.writeln('No string needs to be translated. Exiting...');
     exit(0);
   }
 
+  // to check performance
   String date = DateTime.now().toString();
-  stdout.writeln('$date');
+  stdout.writeln('Translation starts - $date');
 
+  // different functions and arguments for different providers
   if (provider.compareTo('GoogleTest') == 0) {
     await _translateGoogleTest(langStringMap, toTranslateMap);
   } else if (provider.compareTo('Google') == 0) {
-    await _translateGoogle(langStringMap, toTranslateMap, projectKey);
+    await _translateGoogle(
+        langStringMap, toTranslateMap, projectKey, numStringsAtOnce);
   }
 
+  // to check performance
   date = DateTime.now().toString();
-  stdout.writeln('$date');
+  stdout.writeln('Translation ends - $date');
   _updateContent(langStringMap, dirPath);
 }
 
+// see https://github.com/gabrielpacheco23, thanks to Gabriel Pacheco
 _translateGoogleTest(Map<String, Map<String, String>> langStringMap,
     Map<Tuple2<String, String>, List<String>> toTranslateMap) async {
   final gtr = GoogleTranslator();
@@ -146,33 +157,53 @@ _translateGoogleTest(Map<String, Map<String, String>> langStringMap,
   });
 }
 
-// map of <targetLang, sourceLang> to List<key>>
+// Google Translate
+// langStringMap is a map of a language to <key, string>
+// toTranslateMap is a map of <targetLang, sourceLang> to List<key>> - strings to translate
 _translateGoogle(
     Map<String, Map<String, String>> langStringMap,
     Map<Tuple2<String, String>, List<String>> toTranslateMap,
-    String projectKey) async {
+    String projectKey,
+    int numStringsAtOnce) async {
   await Future.forEach(toTranslateMap.entries, (toTranslate) async {
     final targetLang = toTranslate.key.item1;
     final sourceLang = toTranslate.key.item2;
     final keyList = toTranslate.value;
     List<String> stringInOutList = List();
-    keyList.forEach((key) {
-      stringInOutList.add(langStringMap[sourceLang][key]);
-    });
-    await _translateGoogleString(
-        stringInOutList, sourceLang, targetLang, projectKey);
-    int index = 0;
-    keyList.forEach((key) {
-      langStringMap[targetLang][key] = stringInOutList[index++];
-    });
+    int num = 0;
+    for (var key1 in keyList) {
+      stringInOutList.add(langStringMap[sourceLang][key1]);
+      ++num;
+      if (num > 0 && num % numStringsAtOnce == 0) {
+        await _translateGoogleString(
+            stringInOutList, sourceLang, targetLang, projectKey);
+        for (int index = 0; index < stringInOutList.length; index++) {
+          langStringMap[targetLang]
+                  [keyList[num - stringInOutList.length + index]] =
+              stringInOutList[index];
+        }
+        stringInOutList.clear();
+      }
+    }
+    if (stringInOutList.isNotEmpty) {
+      await _translateGoogleString(
+          stringInOutList, sourceLang, targetLang, projectKey);
+      for (int index = 0; index < stringInOutList.length; index++) {
+        langStringMap[targetLang]
+                [keyList[num - stringInOutList.length + index]] =
+            stringInOutList[index];
+      }
+    }
   });
 }
 
+// This is where the magic of Google Translate happens
 _translateGoogleString(List<String> stringInOutList, String sourceLang,
     String targetLang, String projectKey) async {
   // https://translation.googleapis.com/language/translate/v2?target={YOUR_LANGUAGE}&key=${API_KEY}&q=${TEXT}
   const baseUrl = 'translation.googleapis.com';
   const path = 'language/translate/v2';
+  // It's impossible to add several equal query parameters using the 'parameters' map
   final queryStart =
       'format=text&target=$targetLang&source=$sourceLang&key=$projectKey';
   var queryEnd = '';
@@ -184,7 +215,6 @@ _translateGoogleString(List<String> stringInOutList, String sourceLang,
   if (data.statusCode != 200) {
     throw http.ClientException('Error ${data.statusCode}: ${data.body}', url);
   }
-
   stringInOutList.clear();
   final mapList = jsonDecode(data.body)["data"]["translations"];
   mapList.forEach((map) {
@@ -192,6 +222,7 @@ _translateGoogleString(List<String> stringInOutList, String sourceLang,
   });
 }
 
+// Loading of strings from language files
 Future<Map<String, String>> _loadStrings(String lang, String dirPath) async {
   Map<String, String> localizedStrings = Map();
   File file = File('$dirPath/$lang.json');
@@ -205,6 +236,7 @@ Future<Map<String, String>> _loadStrings(String lang, String dirPath) async {
   return localizedStrings;
 }
 
+// Writing translated files
 _updateContent(Map<String, Map<String, String>> langStrMap, dirPath) {
   Future.forEach(langStrMap.entries, (langStrMapEntry) async {
     String jsonStr = json.encode(langStrMapEntry.value);
@@ -267,6 +299,7 @@ void _createContent(
   });
 }
 
+// copy from the dart file
 final Set<String> kSupportedLanguages = HashSet<String>.from(const <String>[
   'af', // Afrikaans
   'am', // Amharic
