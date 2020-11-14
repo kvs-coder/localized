@@ -1,6 +1,7 @@
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:args/args.dart' show ArgParser;
 import 'package:http/http.dart' as http;
 import 'package:tuple/tuple.dart';
@@ -14,13 +15,11 @@ const _providerList = [
   "Google",
   "Yandex",
 ];
-
 final Map<String, Function> _providerTranslateFunctionMap = {
   _providerList[0]: _translateGoogleTest,
   _providerList[1]: _translateGoogle,
   _providerList[2]: _translateYandex,
 };
-
 final Map<String, String> _providerDescriptionMap = {
   _providerList[0]: "Google API through a back door",
   _providerList[1]: "Google using API key",
@@ -58,20 +57,16 @@ void main(List<String> args) {
       abbr: 'n',
       defaultsTo: '1',
       help: 'The number of strings to translate in one request');
-
   final createFiles = parser.parse(args)['create'];
   final translateFiles = parser.parse(args)['translate'];
-
   if ((createFiles && translateFiles) || (!createFiles && !translateFiles)) {
     stdout.writeln('${parser.usage}');
     stdout.writeln(
         'You have to choose between -create and -translate. Exiting...');
     exit(0);
   }
-
   final langCodes = parser.parse(args)['languageCodes'];
   final dirPath = parser.parse(args)['dirPath'];
-
   final Map<String, String> options = Map();
   if (parser.parse(args)['provider'] != null)
     options['provider'] = parser.parse(args)['provider'];
@@ -83,17 +78,15 @@ void main(List<String> args) {
     options['folder_id'] = parser.parse(args)['folder_id'];
   if (parser.parse(args)['token'] != null)
     options['token'] = parser.parse(args)['token'];
-
   // translation from English is better
   langCodes.sort((a, b) => a == 'en' ? -1 : b == 'en' ? 1 : 0);
-
   // creating examples or translating strings?
   if (createFiles) _createLocalizedFiles(langCodes, dirPath);
   if (translateFiles) _translateLocalizedFiles(langCodes, dirPath, options);
 }
 
 // main function to translate
-_translateLocalizedFiles(
+void _translateLocalizedFiles(
     List<String> langCodes, String dirPath, Map<String, String> options) async {
   final provider = options['provider'];
   if (provider == null || !_providerList.contains(provider)) {
@@ -115,7 +108,6 @@ _translateLocalizedFiles(
     stdout.writeln('No localization files found. Exiting...');
     exit(0);
   }
-
   // loading keys and strings to langStringMap for each language
   final Map<String, Map<String, String>> langStringMap = Map();
   for (final lang in langCodes) {
@@ -125,7 +117,6 @@ _translateLocalizedFiles(
     }
     langStringMap[lang] = await _loadStrings(lang, dirPath);
   }
-
   // looking for and collecting strings that exist for one language, but don't for another
   // we need such a strange structure to translate a bunch of strings at once,
   // because this is much quicker
@@ -149,11 +140,9 @@ _translateLocalizedFiles(
     stdout.writeln('No strings need to be translated. Exiting...');
     exit(0);
   }
-
   // to check performance
   String date = DateTime.now().toString();
   stdout.writeln('Translation starts - $date');
-
   // different functions and arguments for different providers
   if (provider.compareTo(_providerList[0]) == 0)
     await _providerTranslateFunctionMap[provider](
@@ -237,7 +226,6 @@ Future<void> _translateGoogle(List<String> stringInOutList, String sourceLang,
     stdout.writeln('No Google project key provided. Exiting...');
     exit(0);
   }
-
   const baseUrl = 'translation.googleapis.com';
   const path = 'language/translate/v2';
   // It's impossible to add several equal query parameters using the 'parameters' map
@@ -277,9 +265,7 @@ Future<void> _translateYandex(List<String> stringInOutList, String sourceLang,
     stdout.writeln('No Yandex Folder ID or IAM token provided. Exiting...');
     exit(0);
   }
-
   const url = "https://translate.api.cloud.yandex.net/translate/v2/translate";
-
   final Map<String, String> headers = {
     'Content-type': 'application/json',
     'Authorization': "Bearer " + yandexIAMToken,
@@ -292,12 +278,10 @@ Future<void> _translateYandex(List<String> stringInOutList, String sourceLang,
       "texts": stringInOutList,
       "targetLanguageCode": targetLang
     });
-
     final data = await http.post(url, body: body, headers: headers);
     if (data.statusCode != 200) {
       throw http.ClientException('Error ${data.statusCode}: ${data.body}');
     }
-
     stringInOutList.clear();
     final mapList = jsonDecode(data.body)["translations"];
     mapList.forEach((map) {
@@ -326,7 +310,6 @@ Future<Map<String, String>> _loadStrings(String lang, String dirPath) async {
     stdout.writeln(
         'Cannot load strings from $dirPath/$lang.json file. An excaption occurs:\n$e.');
   }
-
   return localizedStrings;
 }
 
@@ -366,7 +349,7 @@ void _createLocalizedFiles(List<String> langCodes, String dirPath) {
 void _rewrite(Directory directory, List<String> langCodes, String dirPath) {
   stdout.writeln(
       'The assets with i18n exist. Do you want to override it? [Y/N]:');
-  var line =
+  final line =
       stdin.readLineSync(encoding: Encoding.getByName('utf-8')).toLowerCase();
   switch (line) {
     case 'y':
@@ -383,7 +366,7 @@ void _rewrite(Directory directory, List<String> langCodes, String dirPath) {
 
 void _createContent(
     Directory directory, List<String> langCodes, String dirPath) {
-  directory.create(recursive: true).then((Directory directory) {
+  directory.create(recursive: true).then((directory) {
     for (final lang in langCodes) {
       if (!_isSupported(lang)) {
         stdout.writeln('Language code $lang is not supported.');
