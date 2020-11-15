@@ -7,6 +7,9 @@ YES | NO
 ## Description
 A few sentences describing the overall goals of the pull request's commits.
 
+<b>Before creating any PR to the destination branch, be sure to have the latest destination branch on your local repository. 
+Fetch and Pull origin to be sure that you have all up-to-date.</b>
+
 ## Related PRs
 List related PRs against other branches:
 
