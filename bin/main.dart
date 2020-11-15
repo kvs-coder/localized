@@ -4,9 +4,8 @@ import 'dart:io';
 
 import 'package:args/args.dart' show ArgParser;
 import 'package:http/http.dart' as http;
-import 'package:tuple/tuple.dart';
-
 import 'package:translator/translator.dart';
+import 'package:tuple/tuple.dart';
 
 // supported translation providers
 // GoogleTest should be on the first place
@@ -79,7 +78,11 @@ void main(List<String> args) {
   if (parser.parse(args)['token'] != null)
     options['token'] = parser.parse(args)['token'];
   // translation from English is better
-  langCodes.sort((a, b) => a == 'en' ? -1 : b == 'en' ? 1 : 0);
+  langCodes.sort((a, b) => a == 'en'
+      ? -1
+      : b == 'en'
+          ? 1
+          : 0);
   // creating examples or translating strings?
   if (createFiles) _createLocalizedFiles(langCodes, dirPath);
   if (translateFiles) _translateLocalizedFiles(langCodes, dirPath, options);
