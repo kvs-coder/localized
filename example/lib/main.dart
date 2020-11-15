@@ -8,7 +8,6 @@ void main() {
 
 class MyApp extends StatelessWidget {
   final locales = [
-    // TODO: add new lang in array
     Locale('de', 'DE'),
     Locale('en', 'EN'),
     Locale('ru', 'RU'),
