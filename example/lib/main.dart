@@ -20,7 +20,7 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       supportedLocales: locales,
       localizationsDelegates: [
-        LocalizationService.delegate(locales),
+        LocalizationService.delegate(locales: locales),
       ],
       theme: ThemeData(
         primarySwatch: Colors.blue,
