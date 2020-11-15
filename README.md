@@ -1,6 +1,11 @@
 # localized
 
-String extensions for localization
+String extensions for localization and a translation utility
+
+## Features
+- A script for creating your json localization files (see [Localization](#localization))
+- A **String** extension function _localized_
+- A translation utility (see [Translation](#translation))
 
 ## Getting Started
 
@@ -18,6 +23,7 @@ flutter pub get
 
 ## How to use
 
+### Localization
 The package generates assets with i18n empty content as JSON files for future localized strings.
 
 First think about the localization you want to use and run the script (as an example EN, DE, RU are provided)
@@ -210,4 +216,30 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 ```
 
+### Translation
+
+This library supports translation of every string in your localized json files.
+The APIs:
+- Google Cloud Translator
+- Yandex Translator
+- Microsoft Azure Translator
+
+When you created your json files, you may translate all your strings to desired languages.
+
+For Google:
+
+``` shell
+flutter pub run localized:main -t -l ru,en,de -p Google -k YOUR_GOOGLE_API_KEY -n NUMBER_OF_STRINGS_YOU_WANT_TO_TRANSLATE 
+```
+
+For Yandex:
+
+``` shell
+flutter pub run localized:main -t -l ru,en,de -p Yandex -f YOUR_YANDEX_FOLDER -n 100 -i YOUR_YANDEX_KEY
+```
+
+The translation utility will check for existing keys in json files and if there is no translation for that key
+the utility will handle this.
+
+## License
 Under <a href=https://github.com/VictorKachalov/localized/blob/master/LICENSE>MIT License</a>
