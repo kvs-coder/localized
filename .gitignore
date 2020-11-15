@@ -81,5 +81,4 @@ bin/assets/i18n/de.json
 bin/assets/i18n/en.json
 bin/assets/i18n/ru.json
 bin/assets/i18n/ее
-.gitignore
-.gitignore
+bin/assets/i18n/ru-en.txt
