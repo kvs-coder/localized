@@ -84,3 +84,8 @@ bin/assets/i18n/ее
 bin/assets/i18n/ru-en.txt
 *.lock
 .api_codes.json
+bin/out
+bin/token
+bin/body.json
+bin/assets/i18n/pl.json
+bin/assets/i18n/hi.json
