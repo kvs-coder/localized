@@ -204,22 +204,12 @@ void _translateLocalizedFiles(
     exit(0);
   }
 
-  /// to check performance
-  ///
-  var date = DateTime.now().toString();
-  stdout.writeln('Translation starts - $date');
-
   /// different functions and arguments for different providers
   ///
   provider.compareTo(_providerList[0]) == 0
       ? await _providerTranslateFunctionMap[provider](
           langStringMap, toTranslateMap)
       : await _batchTranslate(langStringMap, toTranslateMap, options);
-
-  /// to check performance
-  ///
-  date = DateTime.now().toString();
-  stdout.writeln('Translation ends   - $date');
   await _updateContent(langStringMap, dirPath);
 }
 
@@ -301,14 +291,11 @@ void _translateGoogle(List<String> stringInOutList, String sourceLang,
   const baseUrl = 'translation.googleapis.com';
   const path = 'language/translate/v2';
   // It's impossible to add several equal query parameters using the 'parameters' map
-  final queryStart =
+  var query =
       'format=text&target=$targetLang&source=$sourceLang&key=$googleProjectKey';
-  var queryEnd = '';
-  stringInOutList.forEach((text) {
-    queryEnd += '&q=$text';
-  });
+  stringInOutList.forEach((text) => query += '&q=$text');
   try {
-    final url = Uri.https(baseUrl, path).replace(query: queryStart + queryEnd);
+    final url = Uri.https(baseUrl, path).replace(query: query);
     final data = await http.get(url);
     if (data.statusCode != 200) {
       throw http.ClientException('Error ${data.statusCode}: ${data.body}', url);
@@ -361,9 +348,7 @@ void _translateYandex(List<String> stringInOutList, String sourceLang,
     ///
     data.headers['content-type'] = 'application/json; charset=UTF-8';
     final mapList = jsonDecode(data.body)['translations'];
-    mapList.forEach((map) {
-      stringInOutList.add(map['text']);
-    });
+    mapList.forEach((map) => stringInOutList.add(map['text']));
   } catch (e) {
     stdout.writeln(
         'Cannot translate some strings from $sourceLang to $targetLang. An exception occurs:\n$e');
@@ -397,20 +382,16 @@ void _translateMicrosoft(List<String> stringInOutList, String sourceLang,
   };
   try {
     var bodyMap = <Map>[];
-    stringInOutList.forEach((str) => {
-          bodyMap.add({'text': str})
-        });
+    stringInOutList.forEach((str) => bodyMap.add({'text': str}));
     final body = json.encode(bodyMap);
     final data = await http.post(url, body: body, headers: headers);
     if (data.statusCode != 200) {
       throw http.ClientException('Error ${data.statusCode}: ${data.body}');
     }
     stringInOutList.clear();
-
     final mapList = jsonDecode(data.body);
-    mapList.forEach((map) {
-      stringInOutList.add(map['translations'][0]['text']);
-    });
+    mapList
+        .forEach((map) => stringInOutList.add(map['translations'][0]['text']));
   } catch (e) {
     stdout.writeln(
         'Cannot translate some strings from $sourceLang to $targetLang. An exception occurs:\n$e');
