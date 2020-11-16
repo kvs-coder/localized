@@ -52,7 +52,7 @@ will be created
 flutter pub run localized:main -l en,de,ru -d res/localizations
 ``` 
 
-Where parameter "-d" is the directory path. By default, if not specified it is set to "assets/i18n".
+(see list of [Parameters](#parameters))
 
 For now the result this will:
 
@@ -64,14 +64,20 @@ For now the result this will:
         - ru.json
 ``` 
 
-A generated assets folder with i18n folder inside and generated JSON files.
-
 Next step is to add these assets in a <b>pubspec.yaml</b> file
 
 ``` Dart
 flutter:
   assets:
     - assets/i18n/
+```
+
+Or your custom:
+
+``` Dart
+flutter:
+  assets:
+    - res/localizations/
 ```
 
 Next is to do some coding
@@ -227,7 +233,7 @@ The APIs:
 - Google Cloud Translator
 - Yandex Translator
 
-When you created your json files, you may translate all your strings to desired languages.
+When you have created your json files, you may want to translate all your strings to desired languages.
 
 The translation utility will check for existing keys in json files and if there is no translation for that key
 the utility will handle this.
@@ -260,9 +266,9 @@ General:
 - **-c** Create sample localization files
 - **-t** Translate localization files
 - **-l** Language codes
-- **-d** i18n files directory
+- **-d** i18n files directory. ("assets/i18n" by default)
 - **-p** Provider of translation API
-- **-n** The number of strings to translate in one request
+- **-n** The number of strings to translate in one request ("1" by default)
 
 Google **only**:
 
