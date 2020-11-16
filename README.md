@@ -33,6 +33,8 @@ specifying the localizations in a line separated with commas
 flutter pub run localized:main -l en,de,ru
 ``` 
 
+(see list of [Parameters](#parameters))
+
 As a result this will be added to the project tree:
 
 ``` shell
@@ -49,6 +51,8 @@ will be created
 ``` shell
 flutter pub run localized:main -l en,de,ru -d res/localizations
 ``` 
+
+Where parameter "-d" is the directory path. By default, if not specified it is set to "assets/i18n".
 
 For now the result this will:
 
@@ -240,12 +244,34 @@ For Yandex:
 flutter pub run localized:main -t -l ru,en,de -p Yandex -f YOUR_YANDEX_FOLDER_ID -n MAXIMUM_BUFFER_NUMBER -i YOUR_YANDEX_IAM_TOKEN
 ```
 
+(see list of [Parameters](#parameters))
+
 Please pay attention to MAXIMUM_BUFFER_NUMBER parameter. This parameter shows how many strings are allowed to be translated in one request.
 By default, the parameter value is set to 1 and generally it will take much longer time for the translation.
 
 The known limits are:
 - Google: 25 strings limit
 - Yandex: 100 string limit
+
+#### Parameters
+
+General:
+
+- **-c** Create sample localization files
+- **-t** Translate localization files
+- **-l** Language codes
+- **-d** i18n files directory
+- **-p** Provider of translation API
+- **-n** The number of strings to translate in one request
+
+Google **only**:
+
+- **-k** Google Project API key
+
+Yandex **only**:
+
+- **-f** Yandex Folder ID
+- **-i** Yandex IAM token
 
 ## License
 Under <a href=https://github.com/VictorKachalov/localized/blob/master/LICENSE>MIT License</a>
