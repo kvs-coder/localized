@@ -10,6 +10,7 @@ import 'constants.dart';
 
 /// Supported translation providers
 /// GoogleTest should be on the first place
+///
 const _providerList = [
   'GoogleTest',
   'Google',
@@ -29,6 +30,7 @@ final Map<String, String> _providerDescriptionMap = {
 /// Creates examples of localized files as well as localizes strings
 /// by translating them using different providers.
 /// See [README.md] and usage for details
+///
 void main(List<String> args) async {
   final parser = ArgParser(allowTrailingOptions: true);
   parser.addFlag('create',
@@ -56,9 +58,11 @@ void main(List<String> args) async {
       help: 'The number of strings to translate in one request');
 
   /// Google special parameters
+  ///
   parser.addOption('key', abbr: 'k', help: 'Google Project API key');
 
   /// Yandex special parameters
+  ///
   parser.addOption('folder_id', abbr: 'f', help: 'Yandex Folder ID');
   parser.addOption('token', abbr: 'i', help: 'Yandex IAM token');
   final createFiles = parser.parse(args)['create'];
@@ -89,13 +93,15 @@ void main(List<String> args) async {
   }
 
   /// translation from English is better
+  ///
   langCodes.sort((a, b) => a == 'en'
-    ? -1
-    : b == 'en'
-        ? 1
-        : 0);
+      ? -1
+      : b == 'en'
+          ? 1
+          : 0);
 
-  /// creating examples or translating strings?
+  /// creating examples or translating strings
+  ///
   if (createFiles) {
     await _createLocalizedFiles(langCodes, dirPath);
   }
@@ -104,7 +110,11 @@ void main(List<String> args) async {
   }
 }
 
-/// main function to translate
+/// Main function to translate.
+/// Requires provider (Yandex, Google...) [options] to handle appropriately.
+/// Will update the existing JSON files with updated translated strings
+/// if there are empty keys.
+///
 void _translateLocalizedFiles(
     List<String> langCodes, String dirPath, Map<String, String> options) async {
   final provider = options['provider'];
@@ -127,7 +137,9 @@ void _translateLocalizedFiles(
     stdout.writeln('No localization files found. Exiting...');
     exit(0);
   }
-  // loading keys and strings to langStringMap for each language
+
+  /// loading keys and strings to langStringMap for each language
+  ///
   final langStringMap = <String, Map<String, String>>{};
   for (final lang in langCodes) {
     if (!_isSupported(lang)) {
@@ -141,6 +153,7 @@ void _translateLocalizedFiles(
   /// we need such a strange structure to translate a bunch of strings at once,
   /// because this is much quicker
   /// Map of <targetLang, sourceLang> to List<key>>
+  ///
   final toTranslateMap = <Tuple2<String, String>, List<String>>{};
   langStringMap.forEach((sourceLang, sourceStringMap) {
     sourceStringMap.forEach((sourceKey, sourceString) {
@@ -165,22 +178,26 @@ void _translateLocalizedFiles(
   }
 
   /// to check performance
+  ///
   var date = DateTime.now().toString();
   stdout.writeln('Translation starts - $date');
 
   /// different functions and arguments for different providers
+  ///
   provider.compareTo(_providerList[0]) == 0
       ? await _providerTranslateFunctionMap[provider](
           langStringMap, toTranslateMap)
       : await _batchTranslate(langStringMap, toTranslateMap, options);
 
   /// to check performance
+  ///
   date = DateTime.now().toString();
   stdout.writeln('Translation ends   - $date');
   await _updateContent(langStringMap, dirPath);
 }
 
 /// see https://github.com/gabrielpacheco23, thanks to Gabriel Pacheco
+///
 void _translateGoogleTest(Map<String, Map<String, String>> langStringMap,
     Map<Tuple2<String, String>, List<String>> toTranslateMap) async {
   final gtr = GoogleTranslator();
@@ -199,6 +216,7 @@ void _translateGoogleTest(Map<String, Map<String, String>> langStringMap,
 
 /// [langStringMap] is a map of a language to <key, string>
 /// [toTranslateMap] is a map of <targetLang, sourceLang> to List<key>> - strings to translate
+///
 void _batchTranslate(
     Map<String, Map<String, String>> langStringMap,
     Map<Tuple2<String, String>, List<String>> toTranslateMap,
@@ -246,6 +264,7 @@ void _batchTranslate(
 /// [langStringMap] is a map of a language to <key, string>
 /// [toTranslateMap] is a map of <targetLang, sourceLang> to List<key>> - strings to translate
 /// https://translation.googleapis.com/language/translate/v2?target={YOUR_LANGUAGE}&key=${API_KEY}&q=${TEXT}
+///
 void _translateGoogle(List<String> stringInOutList, String sourceLang,
     String targetLang, Map<String, String> options) async {
   final googleProjectKey = options['key'];
@@ -275,7 +294,7 @@ void _translateGoogle(List<String> stringInOutList, String sourceLang,
     });
   } catch (e) {
     stdout.writeln(
-        'Cannot translate some strings from $sourceLang to $targetLang. An excaption occurs:\n$e');
+        'Cannot translate some strings from $sourceLang to $targetLang. An exception occurs:\n$e');
     stringInOutList.clear();
   }
 }
@@ -284,6 +303,7 @@ void _translateGoogle(List<String> stringInOutList, String sourceLang,
 /// https://cloud.yandex.com/docs/iam/operations/iam-token/create
 /// [langStringMap] is a map of a language to <key, string>
 /// [toTranslateMap] is a map of <targetLang, sourceLang> to List<key>> - strings to translate
+///
 void _translateYandex(List<String> stringInOutList, String sourceLang,
     String targetLang, Map<String, String> options) async {
   final yandexFolderID = options['folder_id'];
@@ -312,6 +332,7 @@ void _translateYandex(List<String> stringInOutList, String sourceLang,
     stringInOutList.clear();
 
     /// Yandex doesn't set encoding, so decode data we have to update the header manually
+    ///
     data.headers['content-type'] = 'application/json; charset=UTF-8';
     final mapList = jsonDecode(data.body)['translations'];
     mapList.forEach((map) {
@@ -319,12 +340,13 @@ void _translateYandex(List<String> stringInOutList, String sourceLang,
     });
   } catch (e) {
     stdout.writeln(
-        'Cannot translate some strings from $sourceLang to $targetLang. An excaption occurs:\n$e');
+        'Cannot translate some strings from $sourceLang to $targetLang. An exception occurs:\n$e');
     stringInOutList.clear();
   }
 }
 
 /// Loading of strings from language files
+///
 Future<Map<String, String>> _loadStrings(String lang, String dirPath) async {
   var localizedStrings = <String, String>{};
   try {
@@ -338,12 +360,13 @@ Future<Map<String, String>> _loadStrings(String lang, String dirPath) async {
     });
   } catch (e) {
     stdout.writeln(
-        'Cannot load strings from $dirPath/$lang.json file. An excaption occurs:\n$e.');
+        'Cannot load strings from $dirPath/$lang.json file. An exception occurs:\n$e.');
   }
   return localizedStrings;
 }
 
-/// Writing translated files
+/// Writing translated files with updated strings from [langStrMap]
+///
 void _updateContent(
     Map<String, Map<String, String>> langStrMap, dirPath) async {
   await Future.forEach(langStrMap.entries, (langStrMapEntry) async {
@@ -356,13 +379,20 @@ void _updateContent(
       });
     } catch (e) {
       stdout.writeln(
-          'Cannot update $dirPath/${langStrMapEntry.key}.json file. An excaption occurs:\n$e.');
+          'Cannot update $dirPath/${langStrMapEntry.key}.json file. An exception occurs:\n$e.');
     }
   });
 }
 
+/// Checks for supporting selected [locale]
+///
 bool _isSupported(String locale) => kSupportedLanguages.contains(locale);
 
+/// Creates localized files based on existence of the directory
+/// in path [dirPath]
+/// Also check for [langCodes]. Will exit with code [0] if no
+/// lang codes were found.
+///
 void _createLocalizedFiles(List<String> langCodes, String dirPath) {
   if (langCodes.isEmpty) {
     stdout.writeln(
@@ -375,6 +405,12 @@ void _createLocalizedFiles(List<String> langCodes, String dirPath) {
       : _rewrite(directory, langCodes, dirPath);
 }
 
+/// The command awaits for the user input [Y/N]
+/// If "Y" is typed the whole localization folder will be rewritten
+/// If "N" is typed the function exits with [0] code.
+/// If another character is typed, the function will call
+/// itself recursively and will await for a valid input.
+///
 void _rewrite(Directory directory, List<String> langCodes, String dirPath) {
   stdout.writeln(
       'The assets with i18n exist. Do you want to override it? [Y/N]:');
@@ -393,6 +429,10 @@ void _rewrite(Directory directory, List<String> langCodes, String dirPath) {
   }
 }
 
+/// For every element in [langCodes] creates a [directory] with JSON files
+/// in provided directory path [dirPath] and populates them
+/// with dummy data
+///
 void _createContent(
     Directory directory, List<String> langCodes, String dirPath) {
   directory.create(recursive: true).then((directory) {
