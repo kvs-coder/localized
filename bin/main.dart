@@ -15,16 +15,19 @@ const _providerList = [
   'GoogleTest',
   'Google',
   'Yandex',
+  'Microsoft',
 ];
 final Map<String, Function> _providerTranslateFunctionMap = {
   _providerList[0]: _translateGoogleTest,
   _providerList[1]: _translateGoogle,
   _providerList[2]: _translateYandex,
+  _providerList[3]: _translateMicrosoft,
 };
 final Map<String, String> _providerDescriptionMap = {
   _providerList[0]: 'Google API through a back door',
   _providerList[1]: 'Google using API key',
   _providerList[2]: 'Yandex using folder ID and IAM token',
+  _providerList[3]: 'Microsoft using endpoint, region, and key',
 };
 
 /// Creates examples of localized files as well as localizes strings
@@ -59,12 +62,27 @@ void main(List<String> args) async {
 
   /// Google special parameters
   ///
-  parser.addOption('key', abbr: 'k', help: 'Google Project API key');
+  parser.addOption('google_key', abbr: 'k', help: 'Google Project API key');
 
   /// Yandex special parameters
   ///
   parser.addOption('folder_id', abbr: 'f', help: 'Yandex Folder ID');
   parser.addOption('token', abbr: 'i', help: 'Yandex IAM token');
+
+  /// Microsoft special parameters
+  ///
+  parser.addOption('ms_key', abbr: 'm', help: 'Microsoft key');
+  parser.addOption('endpoint',
+      abbr: 'e',
+      help: 'Microsoft endpoint',
+      defaultsTo: 'https://api.cognitive.microsofttranslator.com/');
+  parser.addOption('region',
+      abbr: 'r',
+      help:
+          'Microsoft multi-service or regional translator resource. It is optional when using a global translator resource',
+      defaultsTo: 'global');
+
+  /// Check the command: create an example or translate the strings
   final createFiles = parser.parse(args)['create'];
   final translateFiles = parser.parse(args)['translate'];
   if ((createFiles && translateFiles) || (!createFiles && !translateFiles)) {
@@ -79,8 +97,8 @@ void main(List<String> args) async {
   if (parser.parse(args)['provider'] != null) {
     options['provider'] = parser.parse(args)['provider'];
   }
-  if (parser.parse(args)['key'] != null) {
-    options['key'] = parser.parse(args)['key'];
+  if (parser.parse(args)['google_key'] != null) {
+    options['google_key'] = parser.parse(args)['google_key'];
   }
   if (parser.parse(args)['number'] != null) {
     options['number'] = parser.parse(args)['number'];
@@ -90,6 +108,15 @@ void main(List<String> args) async {
   }
   if (parser.parse(args)['token'] != null) {
     options['token'] = parser.parse(args)['token'];
+  }
+  if (parser.parse(args)['ms_key'] != null) {
+    options['ms_key'] = parser.parse(args)['ms_key'];
+  }
+  if (parser.parse(args)['endpoint'] != null) {
+    options['endpoint'] = parser.parse(args)['endpoint'];
+  }
+  if (parser.parse(args)['region'] != null) {
+    options['region'] = parser.parse(args)['region'];
   }
 
   /// translation from English is better
@@ -260,14 +287,13 @@ void _batchTranslate(
 }
 
 /// Google Translate
-/// https://cloud.google.com/translate/docs/basic/translating-text
+/// https://cloud.google.com/translate/docs/quickstarts
 /// [langStringMap] is a map of a language to <key, string>
 /// [toTranslateMap] is a map of <targetLang, sourceLang> to List<key>> - strings to translate
-/// https://translation.googleapis.com/language/translate/v2?target={YOUR_LANGUAGE}&key=${API_KEY}&q=${TEXT}
 ///
 void _translateGoogle(List<String> stringInOutList, String sourceLang,
     String targetLang, Map<String, String> options) async {
-  final googleProjectKey = options['key'];
+  final googleProjectKey = options['google_key'];
   if (googleProjectKey == null) {
     stdout.writeln('No Google project key provided. Exiting...');
     exit(0);
@@ -300,7 +326,7 @@ void _translateGoogle(List<String> stringInOutList, String sourceLang,
 }
 
 /// Yandex Translate
-/// https://cloud.yandex.com/docs/iam/operations/iam-token/create
+/// https://yandex.com/dev/translate/doc/dg/concepts/about.html/
 /// [langStringMap] is a map of a language to <key, string>
 /// [toTranslateMap] is a map of <targetLang, sourceLang> to List<key>> - strings to translate
 ///
@@ -337,6 +363,53 @@ void _translateYandex(List<String> stringInOutList, String sourceLang,
     final mapList = jsonDecode(data.body)['translations'];
     mapList.forEach((map) {
       stringInOutList.add(map['text']);
+    });
+  } catch (e) {
+    stdout.writeln(
+        'Cannot translate some strings from $sourceLang to $targetLang. An exception occurs:\n$e');
+    stringInOutList.clear();
+  }
+}
+
+/// Microsoft Translate
+/// https://docs.microsoft.com/en-us/azure/cognitive-services/translator/
+/// [langStringMap] is a map of a language to <key, string>
+/// [toTranslateMap] is a map of <targetLang, sourceLang> to List<key>> - strings to translate
+///
+void _translateMicrosoft(List<String> stringInOutList, String sourceLang,
+    String targetLang, Map<String, String> options) async {
+  final msEndpoint = options['endpoint'];
+  final msKey = options['ms_key'];
+  final msRegion = options['region'];
+  if (msEndpoint == null || msKey == null) {
+    stdout.writeln('No Microsoft endpoint or key provided. Exiting...');
+    exit(0);
+  }
+  final url = msEndpoint +
+      '/translate?api-version=3.0&from=' +
+      sourceLang +
+      '&to=' +
+      targetLang;
+  final headers = {
+    'Ocp-Apim-Subscription-Key': msKey,
+    'Content-type': 'application/json',
+    'Ocp-Apim-Subscription-Region': msRegion,
+  };
+  try {
+    var bodyMap = <Map>[];
+    stringInOutList.forEach((str) => {
+          bodyMap.add({'text': str})
+        });
+    final body = json.encode(bodyMap);
+    final data = await http.post(url, body: body, headers: headers);
+    if (data.statusCode != 200) {
+      throw http.ClientException('Error ${data.statusCode}: ${data.body}');
+    }
+    stringInOutList.clear();
+
+    final mapList = jsonDecode(data.body);
+    mapList.forEach((map) {
+      stringInOutList.add(map['translations'][0]['text']);
     });
   } catch (e) {
     stdout.writeln(
