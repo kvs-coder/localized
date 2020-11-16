@@ -13,7 +13,7 @@ String extensions for localization and a translation utility
 - Add this to your package's pubspec.yaml file: 
 ``` Dart
 dependencies:
-     localized: ^1.0.3
+     localized: ^2.0.0
 ```
 - Get dependencies
 
@@ -159,7 +159,7 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       supportedLocales: locales,
       localizationsDelegates: [
-        LocalizationService.delegate(locales),
+        LocalizationService.delegate(locales: locales),
       ],
       theme: ThemeData(
         primarySwatch: Colors.blue,
