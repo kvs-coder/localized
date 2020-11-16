@@ -29,7 +29,7 @@ final Map<String, String> _providerDescriptionMap = {
 /// Creates examples of localized files as well as localizes strings
 /// by translating them using different providers.
 /// See [README.md] and usage for details
-void main(List<String> args) {
+void main(List<String> args) async {
   final parser = ArgParser(allowTrailingOptions: true);
   parser.addFlag('create',
       abbr: 'c',
@@ -90,17 +90,17 @@ void main(List<String> args) {
 
   /// translation from English is better
   langCodes.sort((a, b) => a == 'en'
-      ? -1
-      : b == 'en'
-          ? 1
-          : 0);
+    ? -1
+    : b == 'en'
+        ? 1
+        : 0);
 
   /// creating examples or translating strings?
   if (createFiles) {
-    _createLocalizedFiles(langCodes, dirPath);
+    await _createLocalizedFiles(langCodes, dirPath);
   }
   if (translateFiles) {
-    _translateLocalizedFiles(langCodes, dirPath, options);
+    await _translateLocalizedFiles(langCodes, dirPath, options);
   }
 }
 
@@ -147,7 +147,8 @@ void _translateLocalizedFiles(
       langStringMap.forEach((targetLang, targetStringMap) {
         if (sourceLang != targetLang) {
           if (sourceStringMap[sourceKey].isNotEmpty &&
-              !targetStringMap.containsKey(sourceKey)) {
+              (!targetStringMap.containsKey(sourceKey) ||
+                  targetStringMap[sourceKey].isEmpty)) {
             final tuple = Tuple2(targetLang, sourceLang);
             if (toTranslateMap[tuple] == null) {
               toTranslateMap[tuple] = [];
@@ -176,12 +177,11 @@ void _translateLocalizedFiles(
   /// to check performance
   date = DateTime.now().toString();
   stdout.writeln('Translation ends   - $date');
-  _updateContent(langStringMap, dirPath);
+  await _updateContent(langStringMap, dirPath);
 }
 
 /// see https://github.com/gabrielpacheco23, thanks to Gabriel Pacheco
-Future<void> _translateGoogleTest(
-    Map<String, Map<String, String>> langStringMap,
+void _translateGoogleTest(Map<String, Map<String, String>> langStringMap,
     Map<Tuple2<String, String>, List<String>> toTranslateMap) async {
   final gtr = GoogleTranslator();
   await Future.forEach(toTranslateMap.entries, (toTranslate) async {
@@ -199,7 +199,7 @@ Future<void> _translateGoogleTest(
 
 /// [langStringMap] is a map of a language to <key, string>
 /// [toTranslateMap] is a map of <targetLang, sourceLang> to List<key>> - strings to translate
-Future<void> _batchTranslate(
+void _batchTranslate(
     Map<String, Map<String, String>> langStringMap,
     Map<Tuple2<String, String>, List<String>> toTranslateMap,
     Map<String, String> options) async {
@@ -211,8 +211,12 @@ Future<void> _batchTranslate(
     final keyList = toTranslate.value;
     final stringInOutList = <String>[];
     var num = 0;
-    for (var key1 in keyList) {
-      stringInOutList.add(langStringMap[sourceLang][key1]);
+    for (var key in keyList) {
+      if (langStringMap[targetLang][key] != null &&
+          langStringMap[targetLang][key].isNotEmpty) {
+        continue;
+      }
+      stringInOutList.add(langStringMap[sourceLang][key]);
       ++num;
       if (num > 0 && num % numStringsAtOnce == 0) {
         await _providerTranslateFunctionMap[provider](
@@ -242,7 +246,7 @@ Future<void> _batchTranslate(
 /// [langStringMap] is a map of a language to <key, string>
 /// [toTranslateMap] is a map of <targetLang, sourceLang> to List<key>> - strings to translate
 /// https://translation.googleapis.com/language/translate/v2?target={YOUR_LANGUAGE}&key=${API_KEY}&q=${TEXT}
-Future<void> _translateGoogle(List<String> stringInOutList, String sourceLang,
+void _translateGoogle(List<String> stringInOutList, String sourceLang,
     String targetLang, Map<String, String> options) async {
   final googleProjectKey = options['key'];
   if (googleProjectKey == null) {
@@ -280,7 +284,7 @@ Future<void> _translateGoogle(List<String> stringInOutList, String sourceLang,
 /// https://cloud.yandex.com/docs/iam/operations/iam-token/create
 /// [langStringMap] is a map of a language to <key, string>
 /// [toTranslateMap] is a map of <targetLang, sourceLang> to List<key>> - strings to translate
-Future<void> _translateYandex(List<String> stringInOutList, String sourceLang,
+void _translateYandex(List<String> stringInOutList, String sourceLang,
     String targetLang, Map<String, String> options) async {
   final yandexFolderID = options['folder_id'];
   final yandexIAMToken = options['token'];
@@ -306,6 +310,9 @@ Future<void> _translateYandex(List<String> stringInOutList, String sourceLang,
       throw http.ClientException('Error ${data.statusCode}: ${data.body}');
     }
     stringInOutList.clear();
+
+    /// Yandex doesn't set encoding, so decode data we have to update the header manually
+    data.headers['content-type'] = 'application/json; charset=UTF-8';
     final mapList = jsonDecode(data.body)['translations'];
     mapList.forEach((map) {
       stringInOutList.add(map['text']);
