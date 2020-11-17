@@ -232,6 +232,7 @@ This library supports translation of every string in your localized json files.
 The APIs:
 - Google Cloud Translator
 - Yandex Translator
+- Microsoft Translator
 
 When you have created your json files, you may want to translate all your strings to desired languages.
 
@@ -250,6 +251,12 @@ For Yandex:
 flutter pub run localized:main -t -l ru,en,de -p Yandex -f YOUR_YANDEX_FOLDER_ID -n MAXIMUM_BUFFER_NUMBER -i YOUR_YANDEX_IAM_TOKEN
 ```
 
+For Microsoft:
+
+``` shell
+flutter pub run localized:main -t -l ru,en,de -p Microsoft -m YOUR_MICROSOFT_KEY -r YOUR_REGION -n 100
+```
+
 (see list of [Parameters](#parameters))
 
 Please pay attention to MAXIMUM_BUFFER_NUMBER parameter. This parameter shows how many strings are allowed to be translated in one request.
@@ -258,6 +265,7 @@ By default, the parameter value is set to 1 and generally it will take much long
 The known limits are:
 - Google: 25 strings limit
 - Yandex: 100 string limit
+- Microsoft: 100 string limit
 
 #### Parameters
 
@@ -278,6 +286,12 @@ Yandex **only**:
 
 - **-f** Yandex Folder ID
 - **-i** Yandex IAM token
+
+Microsoft **only**:
+
+- **-m** Microsoft key
+- **-e** Microsoft endpoint. ("https://api.cognitive.microsofttranslator.com/" by default)
+- **-r** Microsoft multi-service or regional translator resource. It is optional when using a global translator resource. ("global" by default)
 
 ## License
 Under <a href=https://github.com/VictorKachalov/localized/blob/master/LICENSE>MIT License</a>

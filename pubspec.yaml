@@ -1,5 +1,5 @@
 name: localized
-description: String extensions for different localizations without additional efforts.
+description: String extensions for different localizations and a translation utility without additional efforts.
 version: 2.0.0
 homepage: https://github.com/VictorKachalov/localized
 
