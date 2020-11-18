@@ -30,6 +30,7 @@ final Map<String, String> _providerDescriptionMap = {
 };
 
 /// Main entry point for every [flutter pub run localized:main] script
+///
 /// Creates examples of localized files as well as localized strings
 /// and translates them using different providers.
 ///
@@ -42,8 +43,13 @@ final Map<String, String> _providerDescriptionMap = {
 /// Do not use both parameters in one call.
 ///
 /// First step:
-/// JSON files creation
-/// Example of creation script:
+/// - JSON files creation
+/// The algorithm will check if you have already created the localization files
+/// and will ask you if you want to overwrite them. If you select "Y" in the
+/// command line, the files and the content will be overwritten. In case of "N"
+/// nothing will change. If you enter other character the function will call itself
+/// recursively until you provide a valid input.
+/// - Example of creation script:
 /// {
 ///  "default_dir": {
 ///     "script": "flutter pub run localized:main -c -l en,de,ru"
@@ -54,8 +60,12 @@ final Map<String, String> _providerDescriptionMap = {
 /// }
 ///
 /// Second step:
-/// Existing strings in existing JSON file translation
-/// Examples of translation scripts:
+/// - Existing strings in existing JSON file translation
+/// The algorithm is based on the amount of localization files you have and requires at least two of them.
+/// The logic is that it compares the amount of key-value pairs in several JSON files and lets translation
+/// running for those JSON files, which don't have the actual translated key-value pairs. It will not
+/// overwrite the already existing translation.
+/// - Examples of translation scripts:
 /// {
 ///  "google": {
 ///    "script": "flutter pub run localized:main -t -l ru,en,de -p Google -k YOUR_GOOGLE_KEY -n 25"

@@ -80,6 +80,12 @@ flutter:
     - res/localizations/
 ```
 
+The algorithm will check if you have already created the localization files
+and will ask you if you want to overwrite them. If you select **Y** in the
+command line, the files and the content will be overwritten. In case of **N**
+nothing will change. If you enter other character the function will call itself
+recursively until you provide a valid input.
+
 Next is to do some coding
 
 - Import the library 
@@ -258,6 +264,11 @@ flutter pub run localized:main -t -l ru,en,de -p Microsoft -m YOUR_MICROSOFT_KEY
 ```
 
 (see list of [Parameters](#parameters))
+
+The algorithm checks the amount of localization files you have and requires at least two of them.
+It compares the amount of key-value pairs in several JSON files and lets translation
+running for those JSON files, which don't have the actual translated key-value pairs. It will not
+overwrite the already existing translation.
 
 Please pay attention to MAXIMUM_BUFFER_NUMBER parameter. This parameter shows how many strings are allowed to be translated in one request.
 By default, the parameter value is set to 1 and generally it will take much longer time for the translation.
