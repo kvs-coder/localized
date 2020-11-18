@@ -142,7 +142,7 @@ void main(List<String> args) async {
 /// if there are empty keys.
 ///
 void _translateLocalizedFiles(
-    List<String> langCodes, String dirPath, Map<String, String> options) async {
+    List<String> langCodes, String dirPath, Map<String, String> options) {
   final provider = options['provider'];
   if (provider == null || !_providerList.contains(provider)) {
     stdout.writeln('No valid translation provider set. Exiting...');
@@ -172,7 +172,7 @@ void _translateLocalizedFiles(
       stdout.writeln('Language code $lang is not supported.');
       continue;
     }
-    langStringMap[lang] = await _loadStrings(lang, dirPath);
+    langStringMap[lang] = _loadStrings(lang, dirPath);
   }
 
   /// looking for and collecting strings that exist for one language, but don't for another
@@ -206,10 +206,9 @@ void _translateLocalizedFiles(
   /// different functions and arguments for different providers
   ///
   provider.compareTo(_providerList[0]) == 0
-      ? await _providerTranslateFunctionMap[provider](
-          langStringMap, toTranslateMap)
-      : await _batchTranslate(langStringMap, toTranslateMap, options);
-  await _updateContent(langStringMap, dirPath);
+      ? _providerTranslateFunctionMap[provider](langStringMap, toTranslateMap)
+      : _batchTranslate(langStringMap, toTranslateMap, options);
+  _updateContent(langStringMap, dirPath);
 }
 
 /// see https://github.com/gabrielpacheco23, thanks to Gabriel Pacheco
@@ -223,9 +222,9 @@ void _translateGoogleTest(Map<String, Map<String, String>> langStringMap,
     final keyList = toTranslate.value;
     await Future.forEach(keyList, (key) async {
       final sourceString = langStringMap[sourceLang][key];
-      langStringMap[targetLang][key] =
-          (await gtr.translate(sourceString, from: sourceLang, to: targetLang))
-              .text;
+      final translated =
+          await gtr.translate(sourceString, from: sourceLang, to: targetLang);
+      langStringMap[targetLang][key] = translated.text;
     });
   });
 }
@@ -253,7 +252,7 @@ void _batchTranslate(
       stringInOutList.add(langStringMap[sourceLang][key]);
       ++num;
       if (num > 0 && num % numStringsAtOnce == 0) {
-        await _providerTranslateFunctionMap[provider](
+        _providerTranslateFunctionMap[provider](
             stringInOutList, sourceLang, targetLang, options);
         for (var index = 0; index < stringInOutList.length; index++) {
           langStringMap[targetLang]
@@ -264,7 +263,7 @@ void _batchTranslate(
       }
     }
     if (stringInOutList.isNotEmpty) {
-      await _providerTranslateFunctionMap[provider](
+      _providerTranslateFunctionMap[provider](
           stringInOutList, sourceLang, targetLang, options);
       for (var index = 0; index < stringInOutList.length; index++) {
         langStringMap[targetLang]
@@ -400,13 +399,17 @@ void _translateMicrosoft(List<String> stringInOutList, String sourceLang,
 
 /// Loading of strings from language files
 ///
-Future<Map<String, String>> _loadStrings(String lang, String dirPath) async {
+Map<String, String> _loadStrings(String lang, String dirPath) {
   var localizedStrings = <String, String>{};
   try {
     final file = File('$dirPath/$lang.json');
-    if (!await file.exists()) return localizedStrings;
-    final jsonString = await file.readAsString();
-    if (jsonString.isEmpty) return localizedStrings;
+    if (!file.existsSync()) {
+      return localizedStrings;
+    }
+    final jsonString = file.readAsStringSync();
+    if (jsonString.isEmpty) {
+      return localizedStrings;
+    }
     final Map<String, dynamic> jsonMap = json.decode(jsonString);
     localizedStrings = jsonMap.map((key, value) {
       return MapEntry(key, value.toString());
@@ -424,12 +427,12 @@ void _updateContent(
     Map<String, Map<String, String>> langStrMap, dirPath) async {
   await Future.forEach(langStrMap.entries, (langStrMapEntry) async {
     try {
-      await File('$dirPath/${langStrMapEntry.key}.json')
-          .create(recursive: true)
-          .then((file) {
-        stdout.writeln('Rewriting file: ${file.path}');
-        file.writeAsString(json.encode(langStrMapEntry.value));
-      });
+      final fileName = '$dirPath/${langStrMapEntry.key}.json';
+      final file = await File(fileName).create(recursive: true);
+      stdout.writeln('Rewriting file: ${file.path}');
+      final writtenFiled =
+          await file.writeAsString(json.encode(langStrMapEntry.value));
+      stdout.writeln('File rewriting finished: ${writtenFiled.path}');
     } catch (e) {
       stdout.writeln(
           'Cannot update $dirPath/${langStrMapEntry.key}.json file. An exception occurs:\n$e.');
