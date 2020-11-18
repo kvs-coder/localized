@@ -30,6 +30,7 @@ final Map<String, String> _providerDescriptionMap = {
 };
 
 /// Main entry point for every [flutter pub run localized:main] script
+///
 /// Creates examples of localized files as well as localized strings
 /// and translates them using different providers.
 ///
@@ -42,8 +43,13 @@ final Map<String, String> _providerDescriptionMap = {
 /// Do not use both parameters in one call.
 ///
 /// First step:
-/// JSON files creation
-/// Example of creation script:
+/// - JSON files creation
+/// The algorithm will check if you have already created the localization files
+/// and will ask you if you want to overwrite them. If you select "Y" in the
+/// command line, the files and the content will be overwritten. In case of "N"
+/// nothing will change. If you enter other character the function will call itself
+/// recursively until you provide a valid input.
+/// - Example of creation script:
 /// {
 ///  "default_dir": {
 ///     "script": "flutter pub run localized:main -c -l en,de,ru"
@@ -54,8 +60,12 @@ final Map<String, String> _providerDescriptionMap = {
 /// }
 ///
 /// Second step:
-/// Existing strings in existing JSON file translation
-/// Examples of translation scripts:
+/// - Existing strings in existing JSON file translation
+/// The algorithm is based on the amount of localization files you have and requires at least two of them.
+/// The logic is that it compares the amount of key-value pairs in several JSON files and lets translation
+/// running for those JSON files, which don't have the actual translated key-value pairs. It will not
+/// overwrite the already existing translation.
+/// - Examples of translation scripts:
 /// {
 ///  "google": {
 ///    "script": "flutter pub run localized:main -t -l ru,en,de -p Google -k YOUR_GOOGLE_KEY -n 25"
@@ -70,7 +80,7 @@ final Map<String, String> _providerDescriptionMap = {
 ///
 /// See [README.md] and usage for details
 ///
-Future<void> main(List<String> args) async {
+void main(List<String> args) async {
   final parser = ArgParser(allowTrailingOptions: true);
   parser.addFlag('create',
       abbr: 'c',
@@ -209,7 +219,7 @@ Future<void> _translateLocalizedFiles(
       stdout.writeln('Language code $lang is not supported.');
       continue;
     }
-    langStringMap[lang] = _loadStrings(lang, dirPath);
+    langStringMap[lang] = await _loadStrings(lang, dirPath);
   }
 
   /// looking for and collecting strings that exist for one language, but don't for another
@@ -243,14 +253,16 @@ Future<void> _translateLocalizedFiles(
   /// different functions and arguments for different providers
   ///
   provider.compareTo(_providerList[0]) == 0
-      ? await _providerTranslateFunctionMap[provider](langStringMap, toTranslateMap)
+      ? await _providerTranslateFunctionMap[provider](
+          langStringMap, toTranslateMap)
       : await _batchTranslate(langStringMap, toTranslateMap, options);
-  _updateContent(langStringMap, dirPath);
+  await _updateContent(langStringMap, dirPath);
 }
 
 /// see https://github.com/gabrielpacheco23, thanks to Gabriel Pacheco
 ///
-Future<void> _translateGoogleTest(Map<String, Map<String, String>> langStringMap,
+Future<void> _translateGoogleTest(
+    Map<String, Map<String, String>> langStringMap,
     Map<Tuple2<String, String>, List<String>> toTranslateMap) async {
   final gtr = GoogleTranslator();
   await Future.forEach(toTranslateMap.entries, (toTranslate) async {
@@ -396,8 +408,8 @@ Future<void> _translateYandex(List<String> stringInOutList, String sourceLang,
 /// [langStringMap] is a map of a language to <key, string>
 /// [toTranslateMap] is a map of <targetLang, sourceLang> to List<key>> - strings to translate
 ///
-Future<void> _translateMicrosoft(List<String> stringInOutList, String sourceLang,
-    String targetLang, Map<String, String> options) async {
+Future<void> _translateMicrosoft(List<String> stringInOutList,
+    String sourceLang, String targetLang, Map<String, String> options) async {
   final msEndpoint = options['endpoint'];
   final msKey = options['ms_key'];
   final msRegion = options['region'];
@@ -436,14 +448,14 @@ Future<void> _translateMicrosoft(List<String> stringInOutList, String sourceLang
 
 /// Loading of strings from language files
 ///
-Map<String, String> _loadStrings(String lang, String dirPath) {
+Future<Map<String, String>> _loadStrings(String lang, String dirPath) async {
   var localizedStrings = <String, String>{};
   try {
     final file = File('$dirPath/$lang.json');
-    if (!file.existsSync()) {
+    if (!await file.exists()) {
       return localizedStrings;
     }
-    final jsonString = file.readAsStringSync();
+    final jsonString = await file.readAsString();
     if (jsonString.isEmpty) {
       return localizedStrings;
     }
