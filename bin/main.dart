@@ -130,10 +130,10 @@ void main(List<String> args) async {
   /// creating examples or translating strings
   ///
   if (createFiles) {
-    await _createLocalizedFiles(langCodes, dirPath);
+    _createLocalizedFiles(langCodes, dirPath);
   }
   if (translateFiles) {
-    await _translateLocalizedFiles(langCodes, dirPath, options);
+    _translateLocalizedFiles(langCodes, dirPath, options);
   }
 }
 
