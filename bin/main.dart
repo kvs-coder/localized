@@ -281,7 +281,7 @@ Future<void> _translateGoogleTest(
 /// [langStringMap] is a map of a language to <key, string>
 /// [toTranslateMap] is a map of <targetLang, sourceLang> to List<key>> - strings to translate
 ///
-void _batchTranslate(
+Future<void> _batchTranslate(
     Map<String, Map<String, String>> langStringMap,
     Map<Tuple2<String, String>, List<String>> toTranslateMap,
     Map<String, String> options) async {
