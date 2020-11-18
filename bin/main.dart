@@ -70,7 +70,7 @@ final Map<String, String> _providerDescriptionMap = {
 ///
 /// See [README.md] and usage for details
 ///
-void main(List<String> args) async {
+void main(List<String> args) {
   final parser = ArgParser(allowTrailingOptions: true);
   parser.addFlag('create',
       abbr: 'c',
