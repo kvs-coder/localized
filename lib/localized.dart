@@ -1,11 +1,11 @@
 library localized;
 
 import 'dart:convert';
-import 'dart:io' show Platform;
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+
+import 'constants.dart';
 
 /// A [Localized] extension for [String]
 ///
@@ -76,9 +76,7 @@ class _LocalizationServiceDelegate
 
   @override
   bool isSupported(Locale locale) => locales == null
-      ? (Platform.isIOS
-          ? kCupertinoSupportedLanguages.contains(locale.languageCode)
-          : kMaterialSupportedLanguages.contains(locale.languageCode))
+      ? kSupportedLanguages.contains(locale.languageCode)
       : locales.map((e) => e.languageCode).contains(locale.languageCode);
 
   @override

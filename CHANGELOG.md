@@ -1,3 +1,7 @@
+## [2.0.1] - 18.11.2020
+
+* Minor fixes
+
 ## [2.0.0] - 16.11.2020
 
 * New feature: Translation. Support of Yandex, Google and Microsoft Translator APIs

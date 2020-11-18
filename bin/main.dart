@@ -3,10 +3,9 @@ import 'dart:io';
 
 import 'package:args/args.dart' show ArgParser;
 import 'package:http/http.dart' as http;
+import 'package:localized/constants.dart';
 import 'package:translator/translator.dart';
 import 'package:tuple/tuple.dart';
-
-import 'constants.dart';
 
 /// Supported translation providers
 /// GoogleTest should be on the first place

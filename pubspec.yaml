@@ -1,6 +1,6 @@
 name: localized
 description: String extensions for different localizations and a translation utility without additional efforts.
-version: 2.0.0
+version: 2.0.1
 homepage: https://github.com/VictorKachalov/localized
 
 environment:
@@ -9,8 +9,6 @@ environment:
 
 dependencies:
   flutter:
-    sdk: flutter
-  flutter_localizations:
     sdk: flutter
   path_provider: ^1.6.21
   args: ^1.6.0
