@@ -1,3 +1,7 @@
+## [2.0.3] - 18.11.2020
+
+* Documentation improved
+
 ## [2.0.2] - 18.11.2020
 
 * Code refactoring

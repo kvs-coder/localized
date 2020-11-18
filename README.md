@@ -13,7 +13,7 @@ String extensions for localization and a translation utility
 - Add this to your package's pubspec.yaml file: 
 ``` Dart
 dependencies:
-     localized: ^2.0.2
+     localized: ^2.0.3
 ```
 - Get dependencies
 
@@ -30,7 +30,7 @@ First think about the localization you want to use and run the script (as an exa
 specifying the localizations in a line separated with commas
 
 ``` shell
-flutter pub run localized:main -l en,de,ru
+flutter pub run localized:main -c -l en,de,ru
 ``` 
 
 (see list of [Parameters](#parameters))
@@ -49,7 +49,7 @@ In addition, you can specify the directory where the files
 will be created
 
 ``` shell
-flutter pub run localized:main -l en,de,ru -d res/localizations
+flutter pub run localized:main -c -l en,de,ru -d res/localizations
 ``` 
 
 (see list of [Parameters](#parameters))

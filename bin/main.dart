@@ -29,8 +29,45 @@ final Map<String, String> _providerDescriptionMap = {
   _providerList[3]: 'Microsoft using endpoint, region, and key',
 };
 
-/// Creates examples of localized files as well as localizes strings
-/// by translating them using different providers.
+/// Main entry point for every [flutter pub run localized:main] script
+/// Creates examples of localized files as well as localized strings
+/// and translates them using different providers.
+///
+/// Translation supports Yandex, Google and Microsoft Translation API.
+///
+/// Based on provided [args] chooses between creation and translation.
+/// Uses [ArgParser] to parse arguments.
+///
+/// Please choose only between creation [-c] and translation [-t].
+/// Do not use both parameters in one call.
+///
+/// First step:
+/// JSON files creation
+/// Example of creation script:
+/// {
+///  "default_dir": {
+///     "script": "flutter pub run localized:main -c -l en,de,ru"
+///  },
+///   "default_custom_dir": {
+///     "script": "flutter pub run localized:main -c -l en,de,ru -d res/localizations"
+///  }
+/// }
+///
+/// Second step:
+/// Existing strings in existing JSON file translation
+/// Examples of translation scripts:
+/// {
+///  "google": {
+///    "script": "flutter pub run localized:main -t -l ru,en,de -p Google -k YOUR_GOOGLE_KEY -n 25"
+///  },
+///  "yandex": {
+///    "script": "flutter pub run localized:main -t -l ru,en,de -p Yandex -f YOUR_YANDEX_FOLDER -n 100 -i YOUR_YANDEX_KEY"
+///  },
+///  "microsoft": {
+///    "script": "flutter pub run localized:main -t -l ru,en,de -p Microsoft -m YOUR_MICROSOFT_KEY -r YOUR_ZONE -n 100"
+///  }
+/// }
+///
 /// See [README.md] and usage for details
 ///
 void main(List<String> args) async {
