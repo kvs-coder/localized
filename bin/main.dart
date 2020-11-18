@@ -70,7 +70,7 @@ final Map<String, String> _providerDescriptionMap = {
 ///
 /// See [README.md] and usage for details
 ///
-void main(List<String> args) {
+Future<void> main(List<String> args) async {
   final parser = ArgParser(allowTrailingOptions: true);
   parser.addFlag('create',
       abbr: 'c',
@@ -166,10 +166,10 @@ void main(List<String> args) {
   /// creating examples or translating strings
   ///
   if (createFiles) {
-    _createLocalizedFiles(langCodes, dirPath);
+    await _createLocalizedFiles(langCodes, dirPath);
   }
   if (translateFiles) {
-    _translateLocalizedFiles(langCodes, dirPath, options);
+    await _translateLocalizedFiles(langCodes, dirPath, options);
   }
 }
 
@@ -178,8 +178,8 @@ void main(List<String> args) {
 /// Will update the existing JSON files with updated translated strings
 /// if there are empty keys.
 ///
-void _translateLocalizedFiles(
-    List<String> langCodes, String dirPath, Map<String, String> options) {
+Future<void> _translateLocalizedFiles(
+    List<String> langCodes, String dirPath, Map<String, String> options) async {
   final provider = options['provider'];
   if (provider == null || !_providerList.contains(provider)) {
     stdout.writeln('No valid translation provider set. Exiting...');
@@ -243,14 +243,14 @@ void _translateLocalizedFiles(
   /// different functions and arguments for different providers
   ///
   provider.compareTo(_providerList[0]) == 0
-      ? _providerTranslateFunctionMap[provider](langStringMap, toTranslateMap)
-      : _batchTranslate(langStringMap, toTranslateMap, options);
+      ? await _providerTranslateFunctionMap[provider](langStringMap, toTranslateMap)
+      : await _batchTranslate(langStringMap, toTranslateMap, options);
   _updateContent(langStringMap, dirPath);
 }
 
 /// see https://github.com/gabrielpacheco23, thanks to Gabriel Pacheco
 ///
-void _translateGoogleTest(Map<String, Map<String, String>> langStringMap,
+Future<void> _translateGoogleTest(Map<String, Map<String, String>> langStringMap,
     Map<Tuple2<String, String>, List<String>> toTranslateMap) async {
   final gtr = GoogleTranslator();
   await Future.forEach(toTranslateMap.entries, (toTranslate) async {
@@ -269,7 +269,7 @@ void _translateGoogleTest(Map<String, Map<String, String>> langStringMap,
 /// [langStringMap] is a map of a language to <key, string>
 /// [toTranslateMap] is a map of <targetLang, sourceLang> to List<key>> - strings to translate
 ///
-void _batchTranslate(
+Future<void> _batchTranslate(
     Map<String, Map<String, String>> langStringMap,
     Map<Tuple2<String, String>, List<String>> toTranslateMap,
     Map<String, String> options) async {
@@ -289,7 +289,7 @@ void _batchTranslate(
       stringInOutList.add(langStringMap[sourceLang][key]);
       ++num;
       if (num > 0 && num % numStringsAtOnce == 0) {
-        _providerTranslateFunctionMap[provider](
+        await _providerTranslateFunctionMap[provider](
             stringInOutList, sourceLang, targetLang, options);
         for (var index = 0; index < stringInOutList.length; index++) {
           langStringMap[targetLang]
@@ -300,7 +300,7 @@ void _batchTranslate(
       }
     }
     if (stringInOutList.isNotEmpty) {
-      _providerTranslateFunctionMap[provider](
+      await _providerTranslateFunctionMap[provider](
           stringInOutList, sourceLang, targetLang, options);
       for (var index = 0; index < stringInOutList.length; index++) {
         langStringMap[targetLang]
@@ -316,7 +316,7 @@ void _batchTranslate(
 /// [langStringMap] is a map of a language to <key, string>
 /// [toTranslateMap] is a map of <targetLang, sourceLang> to List<key>> - strings to translate
 ///
-void _translateGoogle(List<String> stringInOutList, String sourceLang,
+Future<void> _translateGoogle(List<String> stringInOutList, String sourceLang,
     String targetLang, Map<String, String> options) async {
   final googleProjectKey = options['google_key'];
   if (googleProjectKey == null) {
@@ -352,7 +352,7 @@ void _translateGoogle(List<String> stringInOutList, String sourceLang,
 /// [langStringMap] is a map of a language to <key, string>
 /// [toTranslateMap] is a map of <targetLang, sourceLang> to List<key>> - strings to translate
 ///
-void _translateYandex(List<String> stringInOutList, String sourceLang,
+Future<void> _translateYandex(List<String> stringInOutList, String sourceLang,
     String targetLang, Map<String, String> options) async {
   final yandexFolderID = options['folder_id'];
   final yandexIAMToken = options['token'];
@@ -396,7 +396,7 @@ void _translateYandex(List<String> stringInOutList, String sourceLang,
 /// [langStringMap] is a map of a language to <key, string>
 /// [toTranslateMap] is a map of <targetLang, sourceLang> to List<key>> - strings to translate
 ///
-void _translateMicrosoft(List<String> stringInOutList, String sourceLang,
+Future<void> _translateMicrosoft(List<String> stringInOutList, String sourceLang,
     String targetLang, Map<String, String> options) async {
   final msEndpoint = options['endpoint'];
   final msKey = options['ms_key'];
@@ -460,7 +460,7 @@ Map<String, String> _loadStrings(String lang, String dirPath) {
 
 /// Writing translated files with updated strings from [langStrMap]
 ///
-void _updateContent(
+Future<void> _updateContent(
     Map<String, Map<String, String>> langStrMap, dirPath) async {
   await Future.forEach(langStrMap.entries, (langStrMapEntry) async {
     try {
