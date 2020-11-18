@@ -498,14 +498,16 @@ bool _isSupported(String locale) => kSupportedLanguages.contains(locale);
 /// Also check for [langCodes]. Will exit with code [0] if no
 /// lang codes were found.
 ///
-void _createLocalizedFiles(List<String> langCodes, String dirPath) {
+Future<void> _createLocalizedFiles(
+    List<String> langCodes, String dirPath) async {
   if (langCodes.isEmpty) {
     stdout.writeln(
         'To create files you need to provide at least one language code. Exiting...');
     exit(0);
   }
   final directory = Directory(dirPath);
-  !directory.existsSync()
+  final exists = await directory.exists();
+  !exists
       ? _createContent(directory, langCodes, dirPath)
       : _rewrite(directory, langCodes, dirPath);
 }

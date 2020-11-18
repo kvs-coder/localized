@@ -1,3 +1,7 @@
+## [2.0.4] - 18.11.2020
+
+* Race condition fixed
+
 ## [2.0.3] - 18.11.2020
 
 * Documentation improved

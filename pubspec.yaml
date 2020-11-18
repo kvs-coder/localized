@@ -1,6 +1,6 @@
 name: localized
 description: String extensions for different localizations and a translation utility without additional efforts.
-version: 2.0.3
+version: 2.0.4
 homepage: https://github.com/VictorKachalov/localized
 
 environment:
