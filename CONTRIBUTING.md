@@ -18,4 +18,4 @@ Please note we have a code of conduct, please follow it in all your interactions
    
 ## Dart 
 
-We use https://dart.dev/guides/language/effective-dart to provide a good quality and easy readyble code.
+We use https://dart.dev/guides/language/effective-dart to provide a good quality and easy readable code.
