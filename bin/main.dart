@@ -11,10 +11,10 @@ import 'package:tuple/tuple.dart';
 /// The default provider should be the first
 
 class _Provider {
-  final name;
-  final description;
-  final translateFunction;
-  final bulkSupport;
+  final String name;
+  final String description;
+  final Function translateFunction;
+  final bool bulkSupport;
   const _Provider(
       this.name, this.description, this.translateFunction, this.bulkSupport);
 }
@@ -253,7 +253,7 @@ Future<void> _translateLocalizedFiles(
 
   /// different functions for different providers
   ///
-  var provider = _providerList
+  final provider = _providerList
       .firstWhere((provider) => provider.name == options['provider']);
   provider.bulkSupport
       ? await _batchTranslate(provider, langStringMap, toTranslateMap, options)
@@ -456,9 +456,13 @@ Future<Map<String, String>> _loadStrings(String lang, String dirPath) async {
   var localizedStrings = <String, String>{};
   try {
     final file = File('$dirPath/$lang.json');
-    if (!await file.exists()) return localizedStrings;
+    if (!await file.exists()) {
+      return localizedStrings;
+    }
     final jsonString = await file.readAsString();
-    if (jsonString.isEmpty) return localizedStrings;
+    if (jsonString.isEmpty) {
+      return localizedStrings;
+    }
     final Map<String, dynamic> jsonMap = json.decode(jsonString);
     localizedStrings =
         jsonMap.map((key, value) => MapEntry(key, value.toString()));
