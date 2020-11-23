@@ -173,7 +173,7 @@ void main(List<String> args) async {
 
   /// translation from English is better
   ///
-    langCodes.sort((a, b) => a == 'en'
+  langCodes.sort((a, b) => a == 'en'
       ? -1
       : b == 'en'
           ? 1
@@ -423,7 +423,7 @@ Future<void> _translateMicrosoft(List<String> stringInOutList,
       sourceLang +
       '&to=' +
       targetLang;
-  var headers = {
+  final headers = {
     'Ocp-Apim-Subscription-Key': msKey,
     'Content-type': 'application/json',
   };
