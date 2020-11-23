@@ -423,7 +423,7 @@ Future<void> _translateMicrosoft(List<String> stringInOutList,
       sourceLang +
       '&to=' +
       targetLang;
-  var headers = {
+  final headers = {
     'Ocp-Apim-Subscription-Key': msKey,
     'Content-type': 'application/json',
   };
