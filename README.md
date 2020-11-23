@@ -302,7 +302,7 @@ Microsoft **only**:
 
 - **-m** Microsoft key
 - **-e** Microsoft endpoint. ("https://api.cognitive.microsofttranslator.com/" by default)
-- **-r** Microsoft multi-service or regional translator resource. It is optional when using a global translator resource. ("global" by default)
+- **-r** Microsoft multi-service or regional translator resource. It is required when using a multi-service subscription key.
 
 ## License
 Under <a href=https://github.com/VictorKachalov/localized/blob/master/LICENSE>MIT License</a>

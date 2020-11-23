@@ -7,27 +7,27 @@ import 'package:localized/constants.dart';
 import 'package:translator/translator.dart';
 import 'package:tuple/tuple.dart';
 
-/// Supported translation providers
-/// GoogleTest should be on the first place
-///
+/// Supported translation providers.
+/// The default provider should be the first
+
+class _Provider {
+  final String name;
+  final String description;
+  final Function translateFunction;
+  final bool bulkSupport;
+  const _Provider(
+      this.name, this.description, this.translateFunction, this.bulkSupport);
+}
+
 const _providerList = [
-  'GoogleTest',
-  'Google',
-  'Yandex',
-  'Microsoft',
+  _Provider('GoogleTest', 'Google API through a back door',
+      _translateGoogleTest, false),
+  _Provider('Google', 'Google using API key', _translateGoogle, true),
+  _Provider(
+      'Yandex', 'Yandex using folder ID and IAM token', _translateYandex, true),
+  _Provider('Microsoft', 'Microsoft using endpoint, key, and region',
+      _translateMicrosoft, true),
 ];
-final Map<String, Function> _providerTranslateFunctionMap = {
-  _providerList[0]: _translateGoogleTest,
-  _providerList[1]: _translateGoogle,
-  _providerList[2]: _translateYandex,
-  _providerList[3]: _translateMicrosoft,
-};
-final Map<String, String> _providerDescriptionMap = {
-  _providerList[0]: 'Google API through a back door',
-  _providerList[1]: 'Google using API key',
-  _providerList[2]: 'Yandex using folder ID and IAM token',
-  _providerList[3]: 'Microsoft using endpoint, region, and key',
-};
 
 /// Main entry point for every [flutter pub run localized:main] script
 ///
@@ -95,11 +95,16 @@ void main(List<String> args) async {
   parser.addMultiOption('languageCodes', abbr: 'l', help: 'Language codes');
   parser.addOption('dirPath',
       abbr: 'd', defaultsTo: 'assets/i18n', help: 'i18n files directory');
+  final allowed = <String>[];
+  _providerList.forEach((provider) => allowed.add(provider.name));
+  final allowedHelp = <String, String>{
+    for (var pr in _providerList) pr.name: pr.description
+  };
   parser.addOption('provider',
       abbr: 'p',
-      defaultsTo: 'GoogleTest',
-      allowed: _providerList,
-      allowedHelp: _providerDescriptionMap,
+      defaultsTo: _providerList[0].name,
+      allowed: allowed,
+      allowedHelp: allowedHelp,
       help: 'Provider of translation API');
   parser.addOption('number',
       abbr: 'n',
@@ -122,11 +127,12 @@ void main(List<String> args) async {
       abbr: 'e',
       help: 'Microsoft endpoint',
       defaultsTo: 'https://api.cognitive.microsofttranslator.com/');
-  parser.addOption('region',
-      abbr: 'r',
-      help:
-          'Microsoft multi-service or regional translator resource. It is optional when using a global translator resource',
-      defaultsTo: 'global');
+  parser.addOption(
+    'region',
+    abbr: 'r',
+    help:
+        'Microsoft multi-service or regional translator resource. It is required when using a multi-service subscription key',
+  );
 
   /// Check the command: create an example or translate the strings
   final createFiles = parser.parse(args)['create'];
@@ -167,7 +173,7 @@ void main(List<String> args) async {
 
   /// translation from English is better
   ///
-  langCodes.sort((a, b) => a == 'en'
+    langCodes.sort((a, b) => a == 'en'
       ? -1
       : b == 'en'
           ? 1
@@ -190,11 +196,6 @@ void main(List<String> args) async {
 ///
 Future<void> _translateLocalizedFiles(
     List<String> langCodes, String dirPath, Map<String, String> options) async {
-  final provider = options['provider'];
-  if (provider == null || !_providerList.contains(provider)) {
-    stdout.writeln('No valid translation provider set. Exiting...');
-    exit(0);
-  }
   if (langCodes.length < 2) {
     stdout.writeln(
         'For translation you have to provide at least two langCodes. Exiting...');
@@ -237,7 +238,7 @@ Future<void> _translateLocalizedFiles(
                   targetStringMap[sourceKey].isEmpty)) {
             final tuple = Tuple2(targetLang, sourceLang);
             if (toTranslateMap[tuple] == null) {
-              toTranslateMap[tuple] = [];
+              toTranslateMap[tuple] = <String>[];
             }
             toTranslateMap[tuple].add(sourceKey);
           }
@@ -250,12 +251,14 @@ Future<void> _translateLocalizedFiles(
     exit(0);
   }
 
-  /// different functions and arguments for different providers
+  /// different functions for different providers
   ///
-  provider.compareTo(_providerList[0]) == 0
-      ? await _providerTranslateFunctionMap[provider](
-          langStringMap, toTranslateMap)
-      : await _batchTranslate(langStringMap, toTranslateMap, options);
+  final provider = _providerList
+      .firstWhere((provider) => provider.name == options['provider']);
+  provider.bulkSupport
+      ? await _batchTranslate(provider, langStringMap, toTranslateMap, options)
+      : await provider.translateFunction(
+          langStringMap, toTranslateMap, options);
   await _updateContent(langStringMap, dirPath);
 }
 
@@ -263,7 +266,8 @@ Future<void> _translateLocalizedFiles(
 ///
 Future<void> _translateGoogleTest(
     Map<String, Map<String, String>> langStringMap,
-    Map<Tuple2<String, String>, List<String>> toTranslateMap) async {
+    Map<Tuple2<String, String>, List<String>> toTranslateMap,
+    Map<String, String> options) async {
   final gtr = GoogleTranslator();
   await Future.forEach(toTranslateMap.entries, (toTranslate) async {
     final targetLang = toTranslate.key.item1;
@@ -282,11 +286,11 @@ Future<void> _translateGoogleTest(
 /// [toTranslateMap] is a map of <targetLang, sourceLang> to List<key>> - strings to translate
 ///
 Future<void> _batchTranslate(
+    _Provider provider,
     Map<String, Map<String, String>> langStringMap,
     Map<Tuple2<String, String>, List<String>> toTranslateMap,
     Map<String, String> options) async {
   final numStringsAtOnce = int.parse(options['number']);
-  final provider = options['provider'];
   await Future.forEach(toTranslateMap.entries, (toTranslate) async {
     final targetLang = toTranslate.key.item1;
     final sourceLang = toTranslate.key.item2;
@@ -301,7 +305,7 @@ Future<void> _batchTranslate(
       stringInOutList.add(langStringMap[sourceLang][key]);
       ++num;
       if (num > 0 && num % numStringsAtOnce == 0) {
-        await _providerTranslateFunctionMap[provider](
+        await provider.translateFunction(
             stringInOutList, sourceLang, targetLang, options);
         for (var index = 0; index < stringInOutList.length; index++) {
           langStringMap[targetLang]
@@ -312,7 +316,7 @@ Future<void> _batchTranslate(
       }
     }
     if (stringInOutList.isNotEmpty) {
-      await _providerTranslateFunctionMap[provider](
+      await provider.translateFunction(
           stringInOutList, sourceLang, targetLang, options);
       for (var index = 0; index < stringInOutList.length; index++) {
         langStringMap[targetLang]
@@ -349,12 +353,10 @@ Future<void> _translateGoogle(List<String> stringInOutList, String sourceLang,
     }
     stringInOutList.clear();
     final mapList = jsonDecode(data.body)['data']['translations'];
-    mapList.forEach((map) {
-      stringInOutList.add(map['translatedText']);
-    });
-  } catch (e) {
+    mapList.forEach((map) => stringInOutList.add(map['translatedText']));
+  } on Exception catch (e) {
     stdout.writeln(
-        'Cannot translate some strings from $sourceLang to $targetLang. An exception occurs:\n$e');
+        'Cannot translate some strings from $sourceLang to $targetLang. The following exception occurred:\n$e');
     stringInOutList.clear();
   }
 }
@@ -391,14 +393,14 @@ Future<void> _translateYandex(List<String> stringInOutList, String sourceLang,
     }
     stringInOutList.clear();
 
-    /// Yandex doesn't set encoding, so decode data we have to update the header manually
+    /// Yandex doesn't set encoding, so to decode data we have to update the header manually
     ///
     data.headers['content-type'] = 'application/json; charset=UTF-8';
     final mapList = jsonDecode(data.body)['translations'];
     mapList.forEach((map) => stringInOutList.add(map['text']));
-  } catch (e) {
+  } on Exception catch (e) {
     stdout.writeln(
-        'Cannot translate some strings from $sourceLang to $targetLang. An exception occurs:\n$e');
+        'Cannot translate some strings from $sourceLang to $targetLang. The following exception occurred:\n$e');
     stringInOutList.clear();
   }
 }
@@ -412,7 +414,6 @@ Future<void> _translateMicrosoft(List<String> stringInOutList,
     String sourceLang, String targetLang, Map<String, String> options) async {
   final msEndpoint = options['endpoint'];
   final msKey = options['ms_key'];
-  final msRegion = options['region'];
   if (msEndpoint == null || msKey == null) {
     stdout.writeln('No Microsoft endpoint or key provided. Exiting...');
     exit(0);
@@ -422,13 +423,16 @@ Future<void> _translateMicrosoft(List<String> stringInOutList,
       sourceLang +
       '&to=' +
       targetLang;
-  final headers = {
+  var headers = {
     'Ocp-Apim-Subscription-Key': msKey,
     'Content-type': 'application/json',
-    'Ocp-Apim-Subscription-Region': msRegion,
   };
+  final msRegion = options['region'];
+  if (msRegion != null) {
+    headers.addAll({'Ocp-Apim-Subscription-Region': msRegion});
+  }
   try {
-    var bodyMap = <Map>[];
+    var bodyMap = <Map<String, String>>[];
     stringInOutList.forEach((str) => bodyMap.add({'text': str}));
     final body = json.encode(bodyMap);
     final data = await http.post(url, body: body, headers: headers);
@@ -439,9 +443,9 @@ Future<void> _translateMicrosoft(List<String> stringInOutList,
     final mapList = jsonDecode(data.body);
     mapList
         .forEach((map) => stringInOutList.add(map['translations'][0]['text']));
-  } catch (e) {
+  } on Exception catch (e) {
     stdout.writeln(
-        'Cannot translate some strings from $sourceLang to $targetLang. An exception occurs:\n$e');
+        'Cannot translate some strings from $sourceLang to $targetLang. The following exception occurred:\n$e');
     stringInOutList.clear();
   }
 }
@@ -460,12 +464,11 @@ Future<Map<String, String>> _loadStrings(String lang, String dirPath) async {
       return localizedStrings;
     }
     final Map<String, dynamic> jsonMap = json.decode(jsonString);
-    localizedStrings = jsonMap.map((key, value) {
-      return MapEntry(key, value.toString());
-    });
-  } catch (e) {
+    localizedStrings =
+        jsonMap.map((key, value) => MapEntry(key, value.toString()));
+  } on Exception catch (e) {
     stdout.writeln(
-        'Cannot load strings from $dirPath/$lang.json file. An exception occurs:\n$e.');
+        'Cannot load strings from $dirPath/$lang.json file. The following exception occurred:\n$e.');
   }
   return localizedStrings;
 }
@@ -482,9 +485,9 @@ Future<void> _updateContent(
       final writtenFiled =
           await file.writeAsString(json.encode(langStrMapEntry.value));
       stdout.writeln('File rewriting finished: ${writtenFiled.path}');
-    } catch (e) {
+    } on Exception catch (e) {
       stdout.writeln(
-          'Cannot update $dirPath/${langStrMapEntry.key}.json file. An exception occurs:\n$e.');
+          'Cannot update $dirPath/${langStrMapEntry.key}.json file. The following exception occurred:\n$e.');
     }
   });
 }
