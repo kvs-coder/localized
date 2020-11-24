@@ -1,3 +1,7 @@
+## [2.0.5] - 18.11.2020
+
+* Fix with default MS region
+
 ## [2.0.4] - 18.11.2020
 
 * Race condition fixed

@@ -8,15 +8,20 @@ import 'package:translator/translator.dart';
 import 'package:tuple/tuple.dart';
 
 /// Supported translation providers.
-/// The default provider should be the first
-
+/// The default provider should be the first.
+///
 class _Provider {
+  const _Provider(
+    this.name,
+    this.description,
+    this.translateFunction,
+    this.bulkSupport,
+  );
+
   final String name;
   final String description;
   final Function translateFunction;
   final bool bulkSupport;
-  const _Provider(
-      this.name, this.description, this.translateFunction, this.bulkSupport);
 }
 
 const _providerList = [
