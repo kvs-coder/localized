@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:localized/localized.dart';
 
 void main() {
@@ -19,6 +20,8 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       supportedLocales: locales,
       localizationsDelegates: [
+        GlobalCupertinoLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
         LocalizationService.delegate(locales: locales),
       ],
       theme: ThemeData(

@@ -43,7 +43,7 @@ class LocalizationService {
   final Locale locale;
   final String dirPath;
 
-  LocalizationService._({this.locale, this.dirPath = 'assets/i18n/'});
+  LocalizationService._({this.locale, this.dirPath = 'assets/i18n'});
 
   Map<String, String> _localizedStrings;
 

@@ -1,3 +1,7 @@
+## [2.0.6] - 20.12.2020
+
+* Fix with default assets folder
+
 ## [2.0.5] - 18.11.2020
 
 * Fix with default MS region
