@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:args/args.dart' show ArgParser;
 import 'package:http/http.dart' as http;
 import 'package:localized/constants.dart';
-import 'package:translator/translator.dart';
 import 'package:tuple/tuple.dart';
 
 /// Supported translation providers.
@@ -25,8 +24,6 @@ class _Provider {
 }
 
 const _providerList = [
-  _Provider('GoogleTest', 'Google API through a back door',
-      _translateGoogleTest, false),
   _Provider('Google', 'Google using API key', _translateGoogle, true),
   _Provider(
       'Yandex', 'Yandex using folder ID and IAM token', _translateYandex, true),
@@ -267,26 +264,6 @@ Future<void> _translateLocalizedFiles(
   await _updateContent(langStringMap, dirPath);
 }
 
-/// see https://github.com/gabrielpacheco23, thanks to Gabriel Pacheco
-///
-Future<void> _translateGoogleTest(
-    Map<String, Map<String, String>> langStringMap,
-    Map<Tuple2<String, String>, List<String>> toTranslateMap,
-    Map<String, String> options) async {
-  final gtr = GoogleTranslator();
-  await Future.forEach(toTranslateMap.entries, (toTranslate) async {
-    final targetLang = toTranslate.key.item1;
-    final sourceLang = toTranslate.key.item2;
-    final keyList = toTranslate.value;
-    await Future.forEach(keyList, (key) async {
-      final sourceString = langStringMap[sourceLang][key];
-      final translated =
-          await gtr.translate(sourceString, from: sourceLang, to: targetLang);
-      langStringMap[targetLang][key] = translated.text;
-    });
-  });
-}
-
 /// [langStringMap] is a map of a language to <key, string>
 /// [toTranslateMap] is a map of <targetLang, sourceLang> to List<key>> - strings to translate
 ///
@@ -379,7 +356,8 @@ Future<void> _translateYandex(List<String> stringInOutList, String sourceLang,
     stdout.writeln('No Yandex Folder ID or IAM token provided. Exiting...');
     exit(0);
   }
-  const url = 'https://translate.api.cloud.yandex.net/translate/v2/translate';
+  final url =
+      Uri.http('translate.api.cloud.yandex.net', '/translate/v2/translate');
   final headers = {
     'Content-type': 'application/json',
     'Authorization': 'Bearer ' + yandexIAMToken,
@@ -423,11 +401,11 @@ Future<void> _translateMicrosoft(List<String> stringInOutList,
     stdout.writeln('No Microsoft endpoint or key provided. Exiting...');
     exit(0);
   }
-  final url = msEndpoint +
-      '/translate?api-version=3.0&from=' +
-      sourceLang +
-      '&to=' +
-      targetLang;
+  final url = Uri.http(msEndpoint, '/translate', {
+    'api-version': '3.0',
+    'from': sourceLang,
+    'to': targetLang,
+  });
   final headers = {
     'Ocp-Apim-Subscription-Key': msKey,
     'Content-type': 'application/json',
