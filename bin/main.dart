@@ -235,14 +235,18 @@ Future<void> _translateLocalizedFiles(
     sourceStringMap.forEach((sourceKey, sourceString) {
       langStringMap.forEach((targetLang, targetStringMap) {
         if (sourceLang != targetLang) {
-          if (sourceStringMap[sourceKey].isNotEmpty &&
-              (!targetStringMap.containsKey(sourceKey) ||
-                  targetStringMap[sourceKey].isEmpty)) {
-            final tuple = Tuple2(targetLang, sourceLang);
-            if (toTranslateMap[tuple] == null) {
-              toTranslateMap[tuple] = <String>[];
+          final sourceStringValue = sourceStringMap[sourceKey];
+          final targetStringValue = targetStringMap[sourceKey];
+          if (sourceStringValue != null && targetStringValue != null) {
+            if (sourceStringValue.isNotEmpty &&
+                (!targetStringMap.containsKey(sourceKey) ||
+                    targetStringValue.isEmpty)) {
+              final tuple = Tuple2(targetLang, sourceLang);
+              if (toTranslateMap[tuple] == null) {
+                toTranslateMap[tuple] = <String>[];
+              }
+              toTranslateMap[tuple]?.add(sourceKey);
             }
-            toTranslateMap[tuple].add(sourceKey);
           }
         }
       });
@@ -269,44 +273,48 @@ Future<void> _translateLocalizedFiles(
 ///
 Future<void> _batchTranslate(
     _Provider provider,
-    Map<String, Map<String, String>> langStringMap,
+    Map<String, Map<String, String?>> langStringMap,
     Map<Tuple2<String, String>, List<String>> toTranslateMap,
     Map<String, String> options) async {
-  final numStringsAtOnce = int.parse(options['number']);
-  await Future.forEach(toTranslateMap.entries, (toTranslate) async {
-    final targetLang = toTranslate.key.item1;
-    final sourceLang = toTranslate.key.item2;
-    final keyList = toTranslate.value;
-    final stringInOutList = <String>[];
-    var num = 0;
-    for (var key in keyList) {
-      if (langStringMap[targetLang][key] != null &&
-          langStringMap[targetLang][key].isNotEmpty) {
-        continue;
+  final number = options['number'];
+  if (number != null) {
+    final numStringsAtOnce = int.parse(number);
+    await Future.forEach(toTranslateMap.entries, (MapEntry toTranslate) async {
+      final targetLang = toTranslate.key.item1;
+      final sourceLang = toTranslate.key.item2;
+      final keyList = toTranslate.value;
+      final stringInOutList = <String?>[];
+      var num = 0;
+      for (var key in keyList) {
+        final langStringMapTargetLangValue = langStringMap[targetLang]?[key];
+        if (langStringMapTargetLangValue != null &&
+            langStringMapTargetLangValue.isNotEmpty) {
+          continue;
+        }
+        stringInOutList.add(langStringMapTargetLangValue);
+        ++num;
+        if (num > 0 && num % numStringsAtOnce == 0) {
+          await provider.translateFunction(
+              stringInOutList, sourceLang, targetLang, options);
+          for (var index = 0; index < stringInOutList.length; index++) {
+            langStringMap[targetLang]
+                    ?[keyList[num - stringInOutList.length + index]] =
+                stringInOutList[index];
+          }
+          stringInOutList.clear();
+        }
       }
-      stringInOutList.add(langStringMap[sourceLang][key]);
-      ++num;
-      if (num > 0 && num % numStringsAtOnce == 0) {
+      if (stringInOutList.isNotEmpty) {
         await provider.translateFunction(
             stringInOutList, sourceLang, targetLang, options);
         for (var index = 0; index < stringInOutList.length; index++) {
           langStringMap[targetLang]
-                  [keyList[num - stringInOutList.length + index]] =
+                  ?[keyList[num - stringInOutList.length + index]] =
               stringInOutList[index];
         }
-        stringInOutList.clear();
       }
-    }
-    if (stringInOutList.isNotEmpty) {
-      await provider.translateFunction(
-          stringInOutList, sourceLang, targetLang, options);
-      for (var index = 0; index < stringInOutList.length; index++) {
-        langStringMap[targetLang]
-                [keyList[num - stringInOutList.length + index]] =
-            stringInOutList[index];
-      }
-    }
-  });
+    });
+  }
 }
 
 /// Google Translate
@@ -460,7 +468,7 @@ Future<Map<String, String>> _loadStrings(String lang, String dirPath) async {
 ///
 Future<void> _updateContent(
     Map<String, Map<String, String>> langStrMap, dirPath) async {
-  await Future.forEach(langStrMap.entries, (langStrMapEntry) async {
+  await Future.forEach(langStrMap.entries, (MapEntry langStrMapEntry) async {
     try {
       final fileName = '$dirPath/${langStrMapEntry.key}.json';
       final file = await File(fileName).create(recursive: true);
@@ -507,15 +515,13 @@ Future<void> _createLocalizedFiles(
 void _rewrite(Directory directory, List<String> langCodes, String dirPath) {
   stdout.writeln(
       'The assets with i18n exist. Do you want to override it? [Y/N]:');
-  final line =
-      stdin.readLineSync(encoding: Encoding.getByName('utf-8')).toLowerCase();
+  final line = stdin.readLineSync(encoding: utf8)?.toLowerCase();
   switch (line) {
     case 'y':
       _createContent(directory, langCodes, dirPath);
       break;
     case 'n':
       exit(0);
-      break;
     default:
       _rewrite(directory, langCodes, dirPath);
       break;

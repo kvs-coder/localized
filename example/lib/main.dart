@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
       localizationsDelegates: [
         GlobalCupertinoLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
-        LocalizationService.delegate(locales: locales),
+        LocalizationService.delegate(locales),
       ],
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -34,7 +34,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key}) : super(key: key);
+  MyHomePage({Key? key}) : super(key: key);
 
   @override
   _MyHomePageState createState() => _MyHomePageState();

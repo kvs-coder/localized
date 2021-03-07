@@ -15,7 +15,7 @@ extension Localized on String {
   /// Requires [context] as a parameter.
   ///
   String localized(BuildContext context) =>
-      LocalizationService.of(context).translate(this);
+      LocalizationService.of(context)?.translate(this) ?? '';
 }
 
 /// A [LocalizationService] service
@@ -34,18 +34,19 @@ class LocalizationService {
   /// it's [assets/i18n] by default.
   ///
   static LocalizationsDelegate<LocalizationService> delegate(
-          {List<Locale> locales, String dirPath}) =>
+          List<Locale> locales,
+          {String? dirPath}) =>
       _LocalizationServiceDelegate(locales: locales, dirPath: dirPath);
 
-  static LocalizationService of(BuildContext context) =>
+  static LocalizationService? of(BuildContext context) =>
       Localizations.of<LocalizationService>(context, LocalizationService);
 
   final Locale locale;
-  final String dirPath;
+  final String? dirPath;
 
-  LocalizationService._({this.locale, this.dirPath = 'assets/i18n'});
+  LocalizationService._(this.locale, {this.dirPath = 'assets/i18n'});
 
-  Map<String, String> _localizedStrings;
+  late Map<String, String> _localizedStrings;
 
   Future<bool> load() async {
     final jsonString =
@@ -71,19 +72,21 @@ class _LocalizationServiceDelegate
 
   /// A list of desired localizations.
   ///
-  final List<Locale> locales;
-  final String dirPath;
+  final List<Locale>? locales;
+  final String? dirPath;
 
   @override
-  bool isSupported(Locale locale) => locales == null
-      ? kSupportedLanguages.contains(locale.languageCode)
-      : locales.map((e) => e.languageCode).contains(locale.languageCode);
+  bool isSupported(Locale locale) {
+    final supportedLanguages =
+        locales?.map((e) => e.languageCode) ?? kSupportedLanguages;
+    return supportedLanguages.contains(locale.languageCode);
+  }
 
   @override
   Future<LocalizationService> load(Locale locale) async {
     final localizations = dirPath == null
-        ? LocalizationService._(locale: locale)
-        : LocalizationService._(locale: locale, dirPath: dirPath);
+        ? LocalizationService._(locale)
+        : LocalizationService._(locale, dirPath: dirPath);
     await localizations.load();
     return localizations;
   }
