@@ -1,4 +1,4 @@
-## [2.1.0] - 07.03.2021
+## [2.1.0-nullsafety.0] - 07.03.2021
 
 * Null safety support
 

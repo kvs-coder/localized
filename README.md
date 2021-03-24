@@ -13,7 +13,7 @@ String extensions for localization and a translation utility
 - Add this to your package's pubspec.yaml file: 
 ``` Dart
 dependencies:
-     localized: ^2.1.0
+     localized: ^2.1.0-nullsafety.0
 ```
 - Get dependencies
 
