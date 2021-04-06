@@ -238,14 +238,14 @@ Future<void> _translateLocalizedFiles(
     sourceStringMap.forEach((sourceKey, sourceString) {
       langStringMap.forEach((targetLang, targetStringMap) {
         if (sourceLang != targetLang) {
-          if (sourceStringMap[sourceKey].isNotEmpty &&
+          if (sourceStringMap[sourceKey]!.isNotEmpty &&
               (!targetStringMap.containsKey(sourceKey) ||
-                  targetStringMap[sourceKey].isEmpty)) {
+                  targetStringMap[sourceKey]!.isEmpty)) {
             final tuple = Tuple2(targetLang, sourceLang);
             if (toTranslateMap[tuple] == null) {
               toTranslateMap[tuple] = <String>[];
             }
-            toTranslateMap[tuple].add(sourceKey);
+            toTranslateMap[tuple]!.add(sourceKey);
           }
         }
       });
@@ -274,15 +274,15 @@ Future<void> _translateGoogleTest(
     Map<Tuple2<String, String>, List<String>> toTranslateMap,
     Map<String, String> options) async {
   final gtr = GoogleTranslator();
-  await Future.forEach(toTranslateMap.entries, (toTranslate) async {
+  await Future.forEach(toTranslateMap.entries, (dynamic toTranslate) async {
     final targetLang = toTranslate.key.item1;
     final sourceLang = toTranslate.key.item2;
     final keyList = toTranslate.value;
-    await Future.forEach(keyList, (key) async {
-      final sourceString = langStringMap[sourceLang][key];
+    await Future.forEach(keyList, (dynamic key) async {
+      final sourceString = langStringMap[sourceLang]![key]!;
       final translated =
           await gtr.translate(sourceString, from: sourceLang, to: targetLang);
-      langStringMap[targetLang][key] = translated.text;
+      langStringMap[targetLang]![key] = translated.text;
     });
   });
 }
@@ -295,26 +295,26 @@ Future<void> _batchTranslate(
     Map<String, Map<String, String>> langStringMap,
     Map<Tuple2<String, String>, List<String>> toTranslateMap,
     Map<String, String> options) async {
-  final numStringsAtOnce = int.parse(options['number']);
-  await Future.forEach(toTranslateMap.entries, (toTranslate) async {
+  final numStringsAtOnce = int.parse(options['number']!);
+  await Future.forEach(toTranslateMap.entries, (dynamic toTranslate) async {
     final targetLang = toTranslate.key.item1;
     final sourceLang = toTranslate.key.item2;
     final keyList = toTranslate.value;
     final stringInOutList = <String>[];
     var num = 0;
     for (var key in keyList) {
-      if (langStringMap[targetLang][key] != null &&
-          langStringMap[targetLang][key].isNotEmpty) {
+      if (langStringMap[targetLang]![key] != null &&
+          langStringMap[targetLang]![key]!.isNotEmpty) {
         continue;
       }
-      stringInOutList.add(langStringMap[sourceLang][key]);
+      stringInOutList.add(langStringMap[sourceLang]![key]!);
       ++num;
       if (num > 0 && num % numStringsAtOnce == 0) {
         await provider.translateFunction(
             stringInOutList, sourceLang, targetLang, options);
         for (var index = 0; index < stringInOutList.length; index++) {
-          langStringMap[targetLang]
-                  [keyList[num - stringInOutList.length + index]] =
+          langStringMap[targetLang]![
+                  keyList[num - stringInOutList.length + index]] =
               stringInOutList[index];
         }
         stringInOutList.clear();
@@ -324,8 +324,8 @@ Future<void> _batchTranslate(
       await provider.translateFunction(
           stringInOutList, sourceLang, targetLang, options);
       for (var index = 0; index < stringInOutList.length; index++) {
-        langStringMap[targetLang]
-                [keyList[num - stringInOutList.length + index]] =
+        langStringMap[targetLang]![
+                keyList[num - stringInOutList.length + index]] =
             stringInOutList[index];
       }
     }
@@ -379,7 +379,8 @@ Future<void> _translateYandex(List<String> stringInOutList, String sourceLang,
     stdout.writeln('No Yandex Folder ID or IAM token provided. Exiting...');
     exit(0);
   }
-  const url = 'https://translate.api.cloud.yandex.net/translate/v2/translate';
+  const authority = 'translate.api.cloud.yandex.net';
+  const unencodedPath = 'translate/v2/translate';
   final headers = {
     'Content-type': 'application/json',
     'Authorization': 'Bearer ' + yandexIAMToken,
@@ -392,7 +393,8 @@ Future<void> _translateYandex(List<String> stringInOutList, String sourceLang,
       'texts': stringInOutList,
       'targetLanguageCode': targetLang
     });
-    final data = await http.post(url, body: body, headers: headers);
+    final data = await http.post(Uri.https(authority, unencodedPath),
+        headers: headers, body: body);
     if (data.statusCode != 200) {
       throw http.ClientException('Error ${data.statusCode}: ${data.body}');
     }
@@ -437,10 +439,10 @@ Future<void> _translateMicrosoft(List<String> stringInOutList,
     headers.addAll({'Ocp-Apim-Subscription-Region': msRegion});
   }
   try {
-    var bodyMap = <Map<String, String>>[];
+    final bodyMap = <Map<String, String>>[];
     stringInOutList.forEach((str) => bodyMap.add({'text': str}));
     final body = json.encode(bodyMap);
-    final data = await http.post(url, body: body, headers: headers);
+    final data = await http.post(Uri.parse(url), body: body, headers: headers);
     if (data.statusCode != 200) {
       throw http.ClientException('Error ${data.statusCode}: ${data.body}');
     }
@@ -470,7 +472,7 @@ Future<Map<String, String>> _loadStrings(String lang, String dirPath) async {
     }
     final Map<String, dynamic> jsonMap = json.decode(jsonString);
     localizedStrings =
-        jsonMap.map((key, value) => MapEntry(key, value.toString()));
+        jsonMap.map((key, value) => MapEntry(key, value!.toString()));
   } on Exception catch (e) {
     stdout.writeln(
         'Cannot load strings from $dirPath/$lang.json file. The following exception occurred:\n$e.');
@@ -482,14 +484,16 @@ Future<Map<String, String>> _loadStrings(String lang, String dirPath) async {
 ///
 Future<void> _updateContent(
     Map<String, Map<String, String>> langStrMap, dirPath) async {
-  await Future.forEach(langStrMap.entries, (langStrMapEntry) async {
+  await Future.forEach(langStrMap.entries, (dynamic langStrMapEntry) async {
     try {
-      final fileName = '$dirPath/${langStrMapEntry.key}.json';
-      final file = await File(fileName).create(recursive: true);
-      stdout.writeln('Rewriting file: ${file.path}');
-      final writtenFiled =
-          await file.writeAsString(json.encode(langStrMapEntry.value));
-      stdout.writeln('File rewriting finished: ${writtenFiled.path}');
+      if (!langStrMapEntry.value.isEmpty) {
+        final fileName = '$dirPath/${langStrMapEntry.key}.json';
+        final file = await File(fileName).create(recursive: true);
+        stdout.writeln('Rewriting file: ${file.path}');
+        final writtenFiled =
+            await file.writeAsString(json.encode(langStrMapEntry.value));
+        stdout.writeln('File rewriting finished: ${writtenFiled.path}');
+      }
     } on Exception catch (e) {
       stdout.writeln(
           'Cannot update $dirPath/${langStrMapEntry.key}.json file. The following exception occurred:\n$e.');
@@ -530,14 +534,13 @@ void _rewrite(Directory directory, List<String> langCodes, String dirPath) {
   stdout.writeln(
       'The assets with i18n exist. Do you want to override it? [Y/N]:');
   final line =
-      stdin.readLineSync(encoding: Encoding.getByName('utf-8')).toLowerCase();
+      stdin.readLineSync(encoding: Encoding.getByName('utf-8')!)!.toLowerCase();
   switch (line) {
     case 'y':
       _createContent(directory, langCodes, dirPath);
       break;
     case 'n':
       exit(0);
-      break;
     default:
       _rewrite(directory, langCodes, dirPath);
       break;
