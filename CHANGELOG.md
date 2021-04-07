@@ -1,3 +1,11 @@
+## [2.1.1] - 07.04.2021
+
+* Null safety support fixes
+
+## [2.1.0-nullsafety.0] - 07.03.2021
+
+* Null safety support
+
 ## [2.0.6] - 20.12.2020
 
 * Fix with default assets folder
