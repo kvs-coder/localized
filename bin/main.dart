@@ -486,7 +486,7 @@ Future<void> _updateContent(
     Map<String, Map<String, String>> langStrMap, dirPath) async {
   await Future.forEach(langStrMap.entries, (dynamic langStrMapEntry) async {
     try {
-      if (!langStrMapEntry.value.isEmpty) {
+      if (langStrMapEntry.value.isNotEmpty) {
         final fileName = '$dirPath/${langStrMapEntry.key}.json';
         final file = await File(fileName).create(recursive: true);
         stdout.writeln('Rewriting file: ${file.path}');
